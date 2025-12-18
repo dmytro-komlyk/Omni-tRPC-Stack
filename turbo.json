@@ -1,17 +1,92 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "ui": "tui",
+  "globalDependencies": ["tsconfig.json", ".env.*", "pnpm-lock.yaml"],
+  "tasks": {
+    "db:generate": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    },
+    "db:push": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:init": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:deploy": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:status": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    },
+    "db:seed": {
+      "cache": false,
+      "dependsOn": ["db:migrate", "db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:reset": {
+      "cache": false,
+      "dependsOn": [],
+      "env": ["DATABASE_URL"]
+    },
+    "db:full": {
+      "cache": false,
+      "dependsOn": ["db:push", "db:seed"],
+      "env": ["DATABASE_URL"]
+    },
+    "studio": {
+      "cache": false,
+      "persistent": true,
+      "env": ["DATABASE_URL"]
+    },
+    "type-check": {
+      "dependsOn": ["db:generate"],
+      "outputs": [".tsbuildinfo"],
+      "cache": true
+    },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "dependsOn": ["db:generate", "^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", ".expo/**"],
+      "env": ["DATABASE_URL"]
     },
-    "deploy": {
-      "dependsOn": ["build", "lint"]
-    },
-    "lint": {},
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "interactive": true,
+      "env": ["DATABASE_URL"]
+    },
+    "lint": {
+      "cache": false,
+      "env": []
+    },
+    "lint:fix": {
+      "cache": false,
+      "env": []
+    },
+    "clean": {
+      "cache": false
+    },
+    "start": {
+      "cache": false,
+      "persistent": true,
+      "env": ["DATABASE_URL"]
+    },
+    "expo:export": {
+      "dependsOn": ["^build"],
+      "outputs": [".expo/**", "dist/**"],
+      "env": ["DATABASE_URL"]
     }
   }
 }
