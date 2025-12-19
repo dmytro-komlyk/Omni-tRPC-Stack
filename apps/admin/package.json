@@ -71,7 +71,7 @@
     "typescript": "^5.7.3"
   },
   "lint-staged": {
-    "**/*.{js,ts,tsx}": [
+    "**/*.{js,jsx,ts,tsx}": [
       "pnpm lint:fix"
     ]
   }
