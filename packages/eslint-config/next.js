@@ -1,127 +1,50 @@
-const { resolve } = require('node:path');
+import js from '@eslint/js';
+import tsParser from '@typescript-eslint/parser';
+import nextPlugin from '@next/eslint-plugin-next';
+import reactPlugin from 'eslint-plugin-react';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import prettierPlugin from 'eslint-plugin-prettier';
+import simpleImportSortPlugin from 'eslint-plugin-simple-import-sort';
+import unusedImportsPlugin from 'eslint-plugin-unused-imports';
 
-const project = resolve(process.cwd(), 'tsconfig.json');
+export const next = [
+  js.configs.recommended,
+  nextPlugin.configs?.['core-web-vitals'] ?? nextPlugin.configs?.recommended,
+  {
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
 
-/** @type {import("eslint").Linter.Config} */
-module.exports = {
-  extends: ['airbnb-base', 'plugin:@typescript-eslint/recommended', 'prettier'],
-  globals: {
-    React: true,
-    JSX: true,
-  },
-  env: {
-    es6: true,
-    node: true,
-  },
-  plugins: ['react', '@typescript-eslint'],
-  settings: {
-    'import/resolver': {
-      typescript: {
-        project,
+    languageOptions: {
+      parser: tsParser,
+    },
+
+    plugins: {
+      react: reactPlugin,
+      'react-hooks': reactHooksPlugin,
+      'simple-import-sort': simpleImportSortPlugin,
+      'unused-imports': unusedImportsPlugin,
+      prettier: prettierPlugin,
+    },
+
+    settings: {
+      react: {
+        version: 'detect',
       },
     },
-  },
-  ignorePatterns: [
-    // Ignore dotfiles
-    '.*.js',
-    'node_modules/',
-    'dist/',
-    '.next/',
-  ],
-  rules: {
-    'no-underscore-dangle': 'off',
-    'prettier/prettier': [
-      'error',
-      {
-        singleQuote: true,
-        endOfLine: 'auto',
-      },
-    ],
-  },
-  overrides: [
-    {
-      files: ['**/*.js?(x)', '**/*.ts?(x)'],
-      plugins: [
-        '@typescript-eslint',
-        'unused-imports',
-        'tailwindcss',
-        'simple-import-sort',
-      ],
-      extends: [
-        'plugin:tailwindcss/recommended',
-        'airbnb',
-        'plugin:prettier/recommended',
-      ],
-      parserOptions: {
-        project: './tsconfig.json',
-      },
-      rules: {
-        'no-underscore-dangle': 'off',
-        'no-param-reassign': 0,
-        'prettier/prettier': [
-          'error',
-          {
-            singleQuote: true,
-            endOfLine: 'auto',
-          },
-        ],
-        'react/no-unstable-nested-components': [
-          'off' | 'warn' | 'error',
-          { allowAsProps: true | false },
-        ],
-        'react/function-component-definition': 'off', // Disable Airbnb's specific function type
-        'react/destructuring-assignment': 'off', // Vscode doesn't support automatically destructuring, it's a pain to add a new variable
-        'react/require-default-props': 'off', // Allow non-defined react props as undefined
-        'react/jsx-props-no-spreading': 'off', // _app.tsx uses spread operator and also, react-hook-form
-        'react/jsx-filename-extension': [
-          1,
-          { extensions: ['.js', '.jsx', '.ts', '.tsx'] },
-        ],
-        '@next/next/no-img-element': 'off', // We currently not using next/image because it isn't supported with SSG mode
-        '@typescript-eslint/comma-dangle': 'off', // Avoid conflict rule between Eslint and Prettier
-        '@typescript-eslint/no-explicit-any': 'warn',
-        '@typescript-eslint/consistent-type-imports': 'error', // Ensure `import type` is used when it's necessary
-        'no-restricted-syntax': [
-          'error',
-          'ForInStatement',
-          'LabeledStatement',
-          'WithStatement',
-        ], // Overrides Airbnb configuration and enable no-restricted-syntax
-        'import/prefer-default-export': 'off', // Named export is easier to refactor automatically
-        'import/extensions': [
-          'error',
-          'ignorePackages',
-          {
-            js: 'never',
-            jsx: 'never',
-            ts: 'never',
-            tsx: 'never',
-          },
-        ],
-        'simple-import-sort/imports': 'error', // Import configuration for `eslint-plugin-simple-import-sort`
-        'simple-import-sort/exports': 'error', // Export configuration for `eslint-plugin-simple-import-sort`
-        'tailwindcss/no-custom-classname': 'off',
-        'jsx-a11y/label-has-associated-control': [
-          'off',
-          {
-            labelComponents: ['label'],
-            controlComponents: ['input'],
-          },
-        ],
-        'jsx-a11y/click-events-have-key-events': 'off',
-        'jsx-a11y/no-static-element-interactions': 'off',
-        '@typescript-eslint/no-unused-vars': 'off',
-        'unused-imports/no-unused-imports': 'error',
-        'unused-imports/no-unused-vars': [
-          'warn',
-          {
-            vars: 'all',
-            varsIgnorePattern: '^_',
-            args: 'after-used',
-            argsIgnorePattern: '^_',
-          },
-        ],
-      },
+
+    rules: {
+      'react/react-in-jsx-scope': 'off',
+      'react/jsx-no-useless-fragment': 'error',
+      'react/jsx-key': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+      'unused-imports/no-unused-imports': 'error',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'prettier/prettier': 'error',
     },
-  ],
-};
+  },
+
+  {
+    ignores: ['.next/**', 'out/**', 'build/**', 'next-env.d.ts'],
+  },
+];
