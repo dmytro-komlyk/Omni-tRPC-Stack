@@ -1,0 +1,42 @@
+{
+  "name": "@package/store",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./expo": {
+      "react-native": "./src/expo-secure.store.ts",
+      "ios": "./src/expo-secure.store.ts",
+      "android": "./src/expo-secure.store.ts",
+      "default": "./src/expo-secure.store.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch --onSuccess \"echo '✅ @package/store: Watching...'\"",
+    "build:types": "tsc --emitDeclarationOnly",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "expo-secure-store": "~15.0.8",
+    "js-cookie": "^3.0.5",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@package/eslint-config": "workspace:*",
+    "@types/js-cookie": "^3.0.6",
+    "eslint": "^9.39.1",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.3"
+  }
+}
