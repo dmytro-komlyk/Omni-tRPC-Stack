@@ -3,9 +3,9 @@
 import { HeroUIProvider } from '@heroui/react';
 import { TrpcProvider } from '@package/api/provider';
 import { ThemeUIProvider } from '@package/ui/ThemeProvider';
-import { useRouter } from 'next/navigation';
 import type { Session } from 'next-auth';
 import { SessionProvider } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 
 interface IProviderProps {
