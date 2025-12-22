@@ -1,52 +1,119 @@
-import { Injectable } from '@nestjs/common';
-import { TrpcService } from '@server/domain/trpc/trpc.service';
-import { UserService } from '@server/domain/users/users.service';
+import { JwtPayload } from 'jsonwebtoken';
 import z from 'zod';
-import { AuthService } from './auth.service';
+
+import { procedure, protectedProcedure, router } from '../trpc/trpc.server';
+import { outputUserSchema } from '../user/user.schema';
 import {
-  loginSchema,
+  checkTokenSchema,
+  inputBackendTokensSchema,
+  outputAccessTokenSchema,
   outputAuthSchema,
+  outputCheckAuthSchema,
+  signInSchema,
   signUpSchema,
-} from './schemas/auth.schema';
+} from './auth.schema';
+import { signIn, signOut, signUp, updateAccessBackendToken } from './auth.service';
+import { verifyToken } from './jwt.service';
 
-@Injectable()
-export class AuthRouter {
-  constructor(
-    private readonly trpc: TrpcService,
-    private readonly usersService: UserService,
-    private readonly authService: AuthService,
-  ) {}
-
-  authRouter = this.trpc.router({
-    register: this.trpc.procedure
-      .meta({
-        openapi: {
-          method: 'POST',
-          path: '/register',
-          tags: ['auth'],
-          summary: 'Register new user',
-        },
-      })
-      .input(signUpSchema)
-      .output(z.void())
-      .mutation(async ({ input }: any) => {
-        await this.authService.isExistAdmin();
-        const newUser = await this.usersService.create({ ...input });
-        await this.authService.signUp(newUser);
-      }),
-    login: this.trpc.procedure
-      .meta({
-        openapi: {
-          method: 'POST',
-          path: '/login',
-          tags: ['auth'],
-          summary: 'Login user',
-        },
-      })
-      .input(loginSchema)
-      .output(outputAuthSchema)
-      .mutation(async ({ input }: any) => {
-        return await this.authService.login({ ...input });
-      }),
-  });
-}
+export const authRouter = router({
+  checkToken: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.checkToken',
+        summary: 'Checking the auth token',
+        tags: ['auth'],
+        protect: false,
+      },
+    })
+    .input(checkTokenSchema)
+    .output(outputCheckAuthSchema)
+    .mutation(async ({ input }) => {
+      try {
+        const token: JwtPayload = await verifyToken({
+          token: input.token,
+          type: input.type,
+        });
+        return { email: token.email };
+      } catch (error) {
+        console.error('Error in checkToken:', error);
+        throw error;
+      }
+    }),
+  login: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.login',
+        summary: 'Login the user',
+        tags: ['auth'],
+        protect: false,
+      },
+    })
+    .input(signInSchema)
+    .output(outputAuthSchema)
+    .mutation(async ({ input }) => {
+      try {
+        return await signIn({ ...input });
+      } catch (error) {
+        console.error('Error in login:', error);
+        throw error;
+      }
+    }),
+  logout: protectedProcedure
+    .input(z.void())
+    .output(z.object({ isLogined: z.boolean() }))
+    .mutation(async ({ ctx }) => {
+      try {
+        const isLogined: boolean = await signOut(ctx.session.id);
+        return { isLogined };
+      } catch (error) {
+        console.error('Error in logout:', error);
+        throw error;
+      }
+    }),
+  register: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.register',
+        summary: 'Register a new user',
+        tags: ['auth'],
+        protect: true,
+      },
+    })
+    .input(signUpSchema)
+    .output(outputUserSchema)
+    .mutation(async ({ input }) => {
+      try {
+        return await signUp({ ...input });
+      } catch (error) {
+        console.error('Error in register:', error);
+        throw error;
+      }
+    }),
+  updateAccessBackendToken: protectedProcedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.updateAccessBackendToken',
+        summary: 'Update access backend token',
+        tags: ['auth'],
+        protect: true,
+      },
+    })
+    .input(inputBackendTokensSchema)
+    .output(outputAccessTokenSchema)
+    .mutation(async ({ input }) => {
+      try {
+        return await updateAccessBackendToken({ ...input });
+      } catch (error) {
+        console.error('Error in updateAccessBackendToken:', error);
+        throw error;
+      }
+    }),
+});

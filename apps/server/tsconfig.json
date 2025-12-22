@@ -1,19 +1,30 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist",
+    "removeComments": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "target": "ES2022",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "noUncheckedIndexedAccess": true,
-    "strict": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": false,
-    "declaration": true,
-    "removeComments": true,
-    "strictBindCallApply": true,
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2017",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "types": ["mocha"]
-  }
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "noImplicitAny": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*", "*.ts"],
+  "exclude": ["node_modules", "dist"]
 }
