@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client" 
+  output   = "./generated/client"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  nickName  String
+  email     String    @unique
+  password  String
+  isLogined Boolean   @default(false)
+
+  tokens    Token[]   @relation("TokenToUser")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Token {
+  id        String   @id @default(uuid())
+  type      TypeToken
+  token     String   @unique
+  userId    String
+  user      User     @relation("TokenToUser", fields: [userId], references: [id])
+  expires   Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, userId])
+  @@map("tokens")
+}
+
+enum TypeToken {
+  ACCESS
+  REFRESH
+  RESET
+}

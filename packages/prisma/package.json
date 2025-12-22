@@ -1,0 +1,48 @@
+{
+  "name": "@package/prisma",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "generated"
+  ],
+  "scripts": {
+    "db:generate": "prisma generate --schema=./schema.prisma",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:init": "prisma migrate dev --name init",
+    "db:migrate:changes": "prisma migrate dev --name changes_$(date +'%Y%m%d_%H%M%S')",
+    "db:migrate:status": "prisma migrate status",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset --force",
+    "studio": "prisma studio",
+    "build": "pnpm db:generate && tsup",
+    "dev": "pnpm db:generate && tsup --watch",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@prisma/config": "^7.1.0",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.16.0",
+    "dotenv": "^16.6.1",
+    "prisma": "^7.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  }
+}

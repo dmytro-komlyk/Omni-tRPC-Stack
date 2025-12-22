@@ -1,0 +1,34 @@
+{
+  "name": "@package/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch --onSuccess \"echo '✅ @package/shared: Watching...'\"",
+    "build:types": "tsc --emitDeclarationOnly",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "clean": "rimraf dist"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "@package/eslint-config": "workspace:*",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "^19.1.0",
+    "tsup": "^8.5.0",
+    "eslint": "^9.39.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  }
+}
