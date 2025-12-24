@@ -59,13 +59,13 @@
     "build": {
       "dependsOn": ["db:generate", "^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", ".expo/**"],
-      "env": ["DATABASE_URL"]
+      "env": ["DATABASE_URL", "AUTH_DOMAIN"]
     },
     "dev": {
       "cache": false,
       "persistent": true,
       "interactive": true,
-      "env": ["DATABASE_URL"]
+      "env": ["DATABASE_URL", "AUTH_DOMAIN"]
     },
     "lint": {
       "cache": false,
@@ -81,7 +81,7 @@
     "start": {
       "cache": false,
       "persistent": true,
-      "env": ["DATABASE_URL"]
+      "env": ["DATABASE_URL", "AUTH_DOMAIN"]
     },
     "expo:export": {
       "dependsOn": ["^build"],
