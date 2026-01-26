@@ -6,6 +6,5 @@
     "noEmit": true,
     "emitDeclarationOnly": true
   },
-  "include": ["**/*.ts", "**/*.d.ts", "../../types/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "include": ["options.ts", "next-auth.d.ts"]
 }
