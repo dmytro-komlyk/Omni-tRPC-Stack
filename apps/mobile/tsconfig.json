@@ -1,5 +1,5 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": ["../../tsconfig.json", "expo/tsconfig.base"],
   "compilerOptions": {
     "strict": true,
     "baseUrl": ".",
@@ -18,6 +18,17 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "**/*.json"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "**/*.json",
+    "postcss.config.mjs",
+    "nativewind.config.d.ts",
+    "nativewind-env.d.ts",
+    "metro.config.js",
+    "tailwind.config.js"
+  ],
   "exclude": ["node_modules", "dist", ".expo"]
 }

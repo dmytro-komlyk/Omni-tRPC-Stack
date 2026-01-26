@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@package/store": "workspace:^",
     "@package/api": "workspace:^",
+    "@package/store": "workspace:^",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
@@ -32,9 +32,11 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
+    "nativewind": "4.2.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-css-interop": "^0.2.1",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
@@ -44,9 +46,15 @@
   },
   "devDependencies": {
     "@package/eslint-config": "workspace:*",
+    "@package/tailwindcss-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/react": "~19.1.0",
+    "@types/react-native": "^0.73.0",
     "eslint": "^9.39.1",
     "eslint-config-expo": "~10.0.0",
+    "postcss": "^8.5.6",
+    "prettier-plugin-tailwindcss": "^0.5.14",
+    "tailwindcss": "3.4.17",
     "typescript": "~5.9.2"
   },
   "private": true
