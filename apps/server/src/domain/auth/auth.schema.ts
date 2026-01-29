@@ -25,27 +25,19 @@ export const signInSchema = z.object({
 
 export type SignInFormData = z.infer<typeof signInSchema>;
 
-export const signUpSchema = z
-  .object({
-    nickName: z
-      .string()
-      .min(3, 'Минимальное ник имя состоит из 3 символов')
-      .nonempty('Введите свое имя'),
-    email: z
-      .string()
-      .max(30, 'email не должен превышать 30 символов')
-      .email('Неверный адрес электронной почты')
-      .nonempty('Введите адрес электронной почты'),
-    password: z
-      .string()
-      .min(6, 'Минимальное количество символов 6')
-      .nonempty('Введите свой пароль'),
-    passwordConfirmation: z.string().nonempty('Подтвердите свой пароль'),
-  })
-  .refine((data) => data.password === data.passwordConfirmation, {
-    message: 'Пароль не совпадает',
-    path: ['passwordConfirmation'],
-  });
+export const signUpSchema = z.object({
+  nickName: z
+    .string()
+    .min(3, 'Минимальное ник имя состоит из 3 символов')
+    .nonempty('Введите свое имя'),
+  email: z
+    .string()
+    .max(30, 'email не должен превышать 30 символов')
+    .email('Неверный адрес электронной почты')
+    .nonempty('Введите адрес электронной почты'),
+  password: z.string().min(6, 'Минимальное количество символов 6').nonempty('Введите свой пароль'),
+  passwordConfirmation: z.string().nonempty('Подтвердите свой пароль'),
+});
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 

@@ -3,7 +3,7 @@ import fastifyHelmet from '@fastify/helmet';
 import fastifyRateLimit from '@fastify/rate-limit';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
-import { fastifyWebsocket } from '@fastify/websocket';
+import ws from '@fastify/websocket';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
@@ -53,6 +53,7 @@ async function bootstrap() {
           connectSrc: [
             "'self'",
             'ws:',
+            'wss:',
             process.env.APP_WEBSITE_URL as string,
             process.env.APP_ADMIN_URL as string,
             process.env.APP_HTTP_URL as string,
@@ -63,23 +64,23 @@ async function bootstrap() {
     });
     logger.info('Helmet middleware registered with CSP');
 
-    await app.register(fastifyWebsocket, {
+    await app.register(ws, {
       options: {
         maxPayload: 1048576,
         clientTracking: true,
         perMessageDeflate: false,
-        verifyClient: (info, cb) => {
-          const allowedOrigins = [
-            process.env.APP_WEBSITE_URL as string,
-            process.env.APP_ADMIN_URL as string,
-          ].filter(Boolean);
+        // verifyClient: (info, cb) => {
+        //   const allowedOrigins = [
+        //     process.env.APP_WEBSITE_URL as string,
+        //     process.env.APP_ADMIN_URL as string,
+        //   ].filter(Boolean);
 
-          if (allowedOrigins.some((origin) => info.origin.startsWith(origin as string))) {
-            cb(true);
-          } else {
-            cb(false, 401, 'Unauthorized origin');
-          }
-        },
+        //   if (allowedOrigins.some((origin) => info.origin.startsWith(origin as string))) {
+        //     cb(true);
+        //   } else {
+        //     cb(false, 401, 'Unauthorized origin');
+        //   }
+        // },
       },
     });
 
@@ -90,7 +91,15 @@ async function bootstrap() {
       useWSS: true,
       trpcOptions: {
         router: appRouter,
-        createContext: (opts) => createContext({ ...opts, app, logger }),
+        createContext: (opts: any) => {
+          return createContext({
+            req: opts.req,
+            res: opts.res,
+            connection: opts.connection,
+            app,
+            logger,
+          });
+        },
       },
     } satisfies FastifyTRPCPluginOptions<typeof appRouter>);
 

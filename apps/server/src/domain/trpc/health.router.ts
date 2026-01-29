@@ -15,6 +15,7 @@ export const healthCheckerRouter = router({
         protect: false,
       },
     })
+    .input(z.void())
     .output(
       z.object({
         status: z.literal('success'),
@@ -27,7 +28,7 @@ export const healthCheckerRouter = router({
         message: 'Welcome to trpc with Next.js 14 and React Query',
       };
     }),
-  ws: procedure.input(z.void()).subscription(() => {
+  ws: procedure.subscription(() => {
     console.log('✅ WebSocket подписка установлена');
     return observable<string>((emit) => {
       emit.next('🔥 WebSocket подключен!');
@@ -43,4 +44,4 @@ export const healthCheckerRouter = router({
       };
     });
   }),
-}) as any;
+});

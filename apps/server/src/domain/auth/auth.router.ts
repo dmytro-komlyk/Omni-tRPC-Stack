@@ -89,7 +89,7 @@ export const authRouter = router({
     .output(outputUserSchema)
     .mutation(async ({ input }) => {
       try {
-        return await signUp({ ...input });
+        return await signUp(input);
       } catch (error) {
         console.error('Error in register:', error);
         throw error;
