@@ -1,10 +1,10 @@
 'use client';
 
+import { getAccessToken } from '@package/store/expo';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink, loggerLink } from '@trpc/client';
 import { useState } from 'react';
 
-import { getAccessToken } from '@package/store/expo';
 import { trpc } from './client';
 import { queryClientNative } from './query-client';
 

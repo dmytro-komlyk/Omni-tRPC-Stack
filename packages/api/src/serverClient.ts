@@ -1,6 +1,6 @@
-import type { FullServerContext } from 'server/domain/trpc/trpc.context';
-import { appRouter } from 'server/domain/trpc/trpc.router';
-import { createCallerFactory } from 'server/domain/trpc/trpc.server';
+import type { FullServerContext } from '../../../apps/server/src/domain/trpc/trpc.context';
+import { appRouter } from '../../../apps/server/src/domain/trpc/trpc.router';
+import { createCallerFactory } from '../../../apps/server/src/domain/trpc/trpc.server';
 
 const ctx: FullServerContext = {
   session: null,
