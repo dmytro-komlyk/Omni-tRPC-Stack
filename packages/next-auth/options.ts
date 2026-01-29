@@ -1,4 +1,4 @@
-import { serverClient } from '@package/api';
+import { serverClient } from '@package/api/server';
 import { formatInTimeZone } from 'date-fns-tz';
 import type { Session, User } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';

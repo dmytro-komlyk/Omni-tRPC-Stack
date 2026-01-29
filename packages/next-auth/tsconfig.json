@@ -6,5 +6,5 @@
     "noEmit": true,
     "emitDeclarationOnly": true
   },
-  "include": ["options.ts", "next-auth.d.ts"]
+  "include": ["options.ts", "../../types/next-auth.d.ts"]
 }
