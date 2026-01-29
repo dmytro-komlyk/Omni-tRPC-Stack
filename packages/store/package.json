@@ -2,19 +2,18 @@
   "name": "@package/store",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/web.js",
+  "types": "dist/web.d.ts",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/web.js",
+      "types": "./dist/web.d.ts"
     },
     "./expo": {
-      "react-native": "./src/expo-secure.store.ts",
-      "ios": "./src/expo-secure.store.ts",
-      "android": "./src/expo-secure.store.ts",
-      "default": "./src/expo-secure.store.ts"
+      "react-native": "./dist/expo.js",
+      "ios": "./dist/expo.js",
+      "android": "./dist/expo.js",
+      "default": "./dist/expo.js"
     }
   },
   "scripts": {
@@ -36,7 +35,7 @@
     "@types/js-cookie": "^3.0.6",
     "eslint": "^9.39.1",
     "rimraf": "^6.0.1",
-    "tsup": "^8.5.0",
+    "tsup": "^8.5.1",
     "typescript": "^5.7.3"
   }
 }
