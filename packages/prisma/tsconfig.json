@@ -8,9 +8,12 @@
     "outDir": "./dist",
     "skipLibCheck": true,
     "strict": true,
-    "module": "ESNext",
+    "module": "CommonJS",
     "moduleResolution": "node",
-    "target": "ES2022"
+    "target": "ESNext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
