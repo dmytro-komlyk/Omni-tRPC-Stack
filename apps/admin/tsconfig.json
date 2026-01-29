@@ -9,6 +9,14 @@
     "isolatedModules": true,
     "noEmit": true,
     "baseUrl": ".",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
     "paths": {
       "@/*": ["./src/*"],
       "@/public/*": ["./public/*"]
