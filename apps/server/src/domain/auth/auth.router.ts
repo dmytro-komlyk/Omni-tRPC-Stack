@@ -29,7 +29,7 @@ export const authRouter = router({
     })
     .input(checkTokenSchema)
     .output(outputCheckAuthSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         const token: JwtPayload = await verifyToken({
           token: input.token,
@@ -37,7 +37,7 @@ export const authRouter = router({
         });
         return { email: token.email };
       } catch (error) {
-        console.error('Error in checkToken:', error);
+        ctx.logger.error({ error }, error instanceof Error ? error.message : 'Error in checkToken');
         throw error;
       }
     }),
@@ -54,11 +54,11 @@ export const authRouter = router({
     })
     .input(signInSchema)
     .output(outputAuthSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         return await signIn({ ...input });
       } catch (error) {
-        console.error('Error in login:', error);
+        ctx.logger.error({ error }, error instanceof Error ? error.message : 'Error in login');
         throw error;
       }
     }),
@@ -70,7 +70,7 @@ export const authRouter = router({
         const isLogined: boolean = await signOut(ctx.session.id);
         return { isLogined };
       } catch (error) {
-        console.error('Error in logout:', error);
+        ctx.logger.error({ error }, error instanceof Error ? error.message : 'Error in logout');
         throw error;
       }
     }),
@@ -87,11 +87,11 @@ export const authRouter = router({
     })
     .input(signUpSchema)
     .output(outputUserSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         return await signUp(input);
       } catch (error) {
-        console.error('Error in register:', error);
+        ctx.logger.error({ error }, error instanceof Error ? error.message : 'Error in register');
         throw error;
       }
     }),
@@ -108,11 +108,14 @@ export const authRouter = router({
     })
     .input(inputBackendTokensSchema)
     .output(outputAccessTokenSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         return await updateAccessBackendToken({ ...input });
       } catch (error) {
-        console.error('Error in updateAccessBackendToken:', error);
+        ctx.logger.error(
+          { error },
+          error instanceof Error ? error.message : 'Error in updateAccessBackendToken'
+        );
         throw error;
       }
     }),
