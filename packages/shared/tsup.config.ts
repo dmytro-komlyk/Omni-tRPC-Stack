@@ -7,6 +7,4 @@ export default defineConfig({
   format: ['esm', 'cjs'],
   sourcemap: true,
   splitting: false,
-  tsconfig: './tsconfig.json',
-  outExtension: () => ({ js: '.js', dts: '.d.ts' }),
 });

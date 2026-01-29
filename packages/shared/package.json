@@ -19,6 +19,7 @@
     "lint:fix": "eslint . --fix",
     "clean": "rimraf dist"
   },
+  "dependencies": {},
   "peerDependencies": {
     "react": "^19.1.0"
   },
@@ -26,9 +27,9 @@
     "@package/eslint-config": "workspace:*",
     "@types/react": "19.2.7",
     "@types/react-dom": "^19.1.0",
-    "tsup": "^8.5.0",
     "eslint": "^9.39.1",
     "rimraf": "^6.0.1",
+    "tsup": "^8.5.1",
     "typescript": "^5.7.3"
   }
 }
