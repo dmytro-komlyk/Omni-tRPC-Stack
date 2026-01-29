@@ -32,7 +32,7 @@
       "@package/next-auth/*": ["packages/next-auth/src/*"],
       "@package/ui": ["packages/ui/src/index.ts"],
       "@package/ui/*": ["packages/ui/src/*"],
-      "@package/store": ["packages/store/src/index.ts"],
+      "@package/store": ["packages/store/src/web/index.ts"],
       "@package/store/*": ["packages/store/src/*"],
       "@package/prisma": ["packages/prisma/src/index.ts"],
       "@package/prisma/*": ["packages/prisma/src/*"],
