@@ -1,8 +1,8 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/client/client';
+import { PrismaClient } from './generated/client/client';
 
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL as string,
 });
 
 const globalForPrisma = globalThis as typeof globalThis & {
@@ -13,7 +13,12 @@ export const prisma: PrismaClient =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+    log: [
+      { emit: 'event', level: 'query' },
+      { emit: 'stdout', level: 'error' },
+      { emit: 'stdout', level: 'info' },
+      { emit: 'stdout', level: 'warn' },
+    ],
   });
 
 if (process.env.NODE_ENV !== 'production') {
@@ -28,4 +33,4 @@ export const disconnectPrisma = async () => {
   await prisma.$disconnect();
 };
 
-export type { PrismaClient, Token, User } from '../generated/client/client';
+export type { PrismaClient, Token, User } from './generated/client/client';

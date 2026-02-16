@@ -2,8 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client" 
-  output   = "./generated/client"
+  provider   = "prisma-client"
+  output     = "./src/generated/client"
   engineType = "binary"
 }
 
@@ -12,37 +12,114 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  nickName  String
-  email     String    @unique
-  password  String
-  isLogined Boolean   @default(false)
+  id            String    @id @default(uuid())
+  email         String?   @unique
+  emailVerified DateTime?
+  password      String?
 
-  tokens    Token[]   @relation("TokenToUser")
+  firstName String?
+  lastName  String?
+  nickName  String?
+  avatarUrl String?
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  isTwoFactorEnabled Boolean @default(false)
+  twoFactorSecret    String?
 
-  @@map("users")
-}
+  isOnline     Boolean   @default(false)
+  lastActiveAt DateTime?
 
-model Token {
-  id        String   @id @default(uuid())
-  type      TypeToken
-  token     String   @unique
-  userId    String
-  user      User     @relation("TokenToUser", fields: [userId], references: [id])
-  expires   Int
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([type, userId])
+  accounts           Account[]
+  sessions           Session[]
+  tokens             Token[]
+  verificationTokens VerificationToken[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String @id @default(uuid())
+  userId            String
+  type              String // "oauth" | "email" | "credentials"
+  provider          String // google" | "facebook" | "github" | "apple"
+  providerAccountId String
+
+  // OAuth
+  refresh_token String?
+  access_token  String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+
+  session_state String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expiresAt    DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id         String           @id @default(uuid())
+  identifier String // email | phone
+  token      String
+  type       VerificationType
+  expiresAt  DateTime
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([identifier, token])
+  @@index([type])
+  @@map("verification_tokens")
+}
+
+enum VerificationType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  EMAIL_CHANGE
+  TWO_FACTOR_SETUP
+  MAGIC_LINK
+}
+
+model Token {
+  id        String    @id @default(uuid())
+  userId    String
+  type      TokenType
+  token     String    @unique
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
   @@map("tokens")
 }
 
-enum TypeToken {
+enum TokenType {
   ACCESS
   REFRESH
   RESET
+  MAGIC_LINK
 }

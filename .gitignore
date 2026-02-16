@@ -50,7 +50,7 @@ apps/database/seeds
 
 # Prisma
 packages/prisma/seeds
-packages/prisma/generated
+packages/prisma/src/generated
 
 # Nginx
 
