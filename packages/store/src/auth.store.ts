@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'auth-storage-expo',
+      name: 'auth-expo',
       storage: {
         getItem: async (name) => {
           const value = await secureStorage.getItem(name);
