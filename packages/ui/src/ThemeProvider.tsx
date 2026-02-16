@@ -1,6 +1,6 @@
 'use client';
 
-import { useThemeCookieStore } from '@package/store';
+import { useThemeCookieStore } from '@package/store/ui';
 import { ThemeProvider } from 'next-themes';
 import React from 'react';
 
@@ -12,13 +12,6 @@ export function ThemeUIProvider({
   defaultThemeFromCookie: string;
 }) {
   const { theme: zustandTheme, _hasHydrated } = useThemeCookieStore();
-
-  React.useEffect(() => {
-    if (_hasHydrated) {
-      document.documentElement.classList.remove('light', 'dark');
-      document.documentElement.classList.add(zustandTheme);
-    }
-  }, [zustandTheme, _hasHydrated]);
 
   if (!_hasHydrated) {
     return (
