@@ -1,10 +1,17 @@
-import type { FullServerContext } from 'server/src/domain/trpc/trpc.context';
-import { appRouter } from 'server/src/domain/trpc/trpc.router';
-import { createCallerFactory } from 'server/src/domain/trpc/trpc.server';
+import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import { AppRouter } from 'server/src/domain/trpc/trpc.router';
 
-const ctx: FullServerContext = {
-  session: null,
-  logger: {} as any,
+export const getRemoteServerClient = (sessionToken?: string | null) => {
+  return createTRPCProxyClient<AppRouter>({
+    links: [
+      httpBatchLink({
+        url: process.env.APP_HTTP_URL as string,
+        headers() {
+          return {
+            ...(sessionToken ? { 'x-session-token': sessionToken } : {}),
+          };
+        },
+      }),
+    ],
+  });
 };
-
-export const serverClient = createCallerFactory(appRouter)(ctx);

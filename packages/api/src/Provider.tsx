@@ -4,8 +4,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { httpBatchLink, loggerLink } from '@trpc/client';
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
 
+import { useState } from 'react';
 import { trpc } from './client';
 import { queryClient } from './query-client';
 
@@ -18,9 +18,9 @@ export function TrpcProvider({ children }: { children: React.ReactNode }) {
         loggerLink({ enabled: () => process.env.NODE_ENV === 'development' }),
         httpBatchLink({
           url: process.env.NEXT_PUBLIC_SERVER_TRPC_URL as string,
-          async headers() {
+          headers() {
             return {
-              Authorization: `Bearer ${session?.user?.accessToken || ''}`,
+              ...(session?.user ? { 'x-session-token': session?.user?.sessionToken } : {}),
             };
           },
           async fetch(url, options) {
@@ -29,10 +29,8 @@ export function TrpcProvider({ children }: { children: React.ReactNode }) {
               credentials: 'include',
               signal: options?.signal ?? null,
             });
-            if (response.status === 401) {
-              if (typeof window !== 'undefined') {
-                window.location.href = '/auth/signin';
-              }
+            if (response.status === 401 && typeof window !== 'undefined') {
+              // Можно добавить логику signOut() из next-auth/react здесь
             }
             return response;
           },
