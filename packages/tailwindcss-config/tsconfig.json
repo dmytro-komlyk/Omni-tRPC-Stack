@@ -3,7 +3,8 @@
   "compilerOptions": {
     "declaration": true,
     "declarationMap": true,
-    "noEmit": true,
+    "noEmit": false,
+    "composite": true,
     "emitDeclarationOnly": true
   },
   "include": ["**/*.ts"],

@@ -3,14 +3,14 @@ import 'next-auth/jwt';
 
 declare module 'next-auth' {
   interface User {
-    id?: string;
-    email?: string | null;
-    nickName: string;
+    id: string;
+    email: string | null;
+    nickName: string | null;
+    avatarUrl: string | null;
     accessToken: string;
-    accessTokenExp: number;
-    refreshToken?: string;
-    refreshTokenExp: number;
-    isLogined: boolean;
+    accessTokenExp: Date | string | number; // Бэкенд может вернуть строку или дату
+    refreshTokenExp: Date | string | number;
+    sessionToken: string;
   }
 
   interface Session {
@@ -19,23 +19,21 @@ declare module 'next-auth' {
       email: string;
       nickName: string;
       accessToken: string;
-      accessTokenExp: number;
-      refreshTokenExp: number;
-      isLogined: boolean;
-    } | null;
-    expires: string;
+      sessionToken: string;
+    } & DefaultSession['user'];
+    error?: 'RefreshAccessTokenError' | 'RefreshTokenExpired';
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    id?: string;
-    email?: string;
-    nickName?: string;
-    accessToken?: string;
-    refreshToken?: string;
-    isLogined?: boolean;
-    accessTokenExp?: number;
-    refreshTokenExp?: number;
+    id: string;
+    email: string | null;
+    nickName: string | null;
+    avatarUrl: string | null;
+    accessToken: string;
+    accessTokenExp: number;
+    refreshTokenExp: number;
+    sessionToken: string;
   }
 }

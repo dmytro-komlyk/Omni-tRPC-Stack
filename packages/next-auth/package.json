@@ -3,9 +3,33 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./options": {
+      "types": "./dist/options.d.ts",
+      "import": "./dist/options.mjs",
+      "require": "./dist/options.js"
+    }
+  },
   "scripts": {
+    "build": "tsup",
+    "build:types": "tsc --emitDeclarationOnly -p tsconfig.types.json",
+    "build:all": "pnpm build && pnpm build:types",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "dev": "concurrently --kill-others-on-fail -n TSUP,TYPES \"tsup --watch\" \"tsc -p tsconfig.types.json --watch --preserveWatchOutput --incremental\"",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@package/api": "workspace:^",
@@ -21,6 +45,7 @@
     "@types/eslint": "^9.6.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@typescript-eslint/parser": "^8.48.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "tsup": "^8.5.0",
     "typescript": "^5.2.2"

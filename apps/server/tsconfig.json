@@ -3,6 +3,7 @@
   "compilerOptions": {
     "declaration": true,
     "declarationMap": true,
+    "rootDir": "./src",
     "outDir": "./dist",
     "removeComments": true,
     "experimentalDecorators": true,
@@ -25,6 +26,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "test/**/*", "*.ts"],
+  "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]
 }

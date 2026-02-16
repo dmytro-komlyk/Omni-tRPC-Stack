@@ -3,7 +3,8 @@
   "compilerOptions": {
     "declaration": false,
     "declarationMap": false,
-    "noEmit": true,
+    "noEmit": false,
+    "composite": true,
     "allowJs": true,
     "checkJs": false,
     "skipLibCheck": true

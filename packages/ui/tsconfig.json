@@ -1,19 +1,24 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "skipLibCheck": true,
-    "stripInternal": false,
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist",
-    "lib": ["dom", "dom.iterable", "es2022"],
-    "jsx": "react-jsx",
-    "allowImportingTsExtensions": true,
+    "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
+
+    "noEmit": true,
+    "composite": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "jsx": "react-jsx",
+    "lib": ["dom", "dom.iterable", "ES2022"],
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "allowImportingTsExtensions": true,
+    "stripInternal": false
   },
-  "include": ["src", "tsup.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.*", "**/*.stories.*"]
 }

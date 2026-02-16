@@ -8,38 +8,34 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
-      "import": "./dist/client.js",
-      "require": "./dist/client.js"
+      "import": "./dist/client.js"
     },
     "./server": {
-      "types": "./dist/server.d.ts",
-      "import": "./dist/server.js",
-      "require": "./dist/server.js"
+      "types": "./dist/serverClient.d.ts",
+      "import": "./dist/serverClient.js"
     },
     "./provider": {
-      "types": "./dist/provider.d.ts",
-      "import": "./dist/provider.js",
-      "require": "./dist/provider.js"
+      "types": "./dist/Provider.d.ts",
+      "import": "./dist/Provider.js"
     },
     "./providerNative": {
-      "types": "./dist/providerNative.d.ts",
-      "import": "./dist/providerNative.js",
-      "require": "./dist/providerNative.js"
+      "types": "./dist/ProviderNative.d.ts",
+      "import": "./dist/ProviderNative.js"
     }
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch --onSuccess \"echo '✅ @package/api: Watching...'\"",
-    "build:types": "tsc --emitDeclarationOnly",
-    "type-check": "tsc --noEmit",
+    "build:types": "tsc --emitDeclarationOnly -p tsconfig.types.json",
+    "build:all": "pnpm build && pnpm build:types",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "dev": "concurrently --kill-others-on-fail -n TSUP,TYPES \"tsup --watch\" \"tsc -p tsconfig.types.json --watch --preserveWatchOutput --incremental\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@package/store": "workspace:^",
@@ -57,8 +53,8 @@
     "next-auth": "^5.0.0-beta.25",
     "qs": "^6.14.0",
     "react-dom": "^19.1.0",
-    "superjson": "^2.2.2",
     "server": "workspace:^",
+    "superjson": "^2.2.2",
     "zod": "^4.0.0"
   },
   "peerDependencies": {
@@ -69,6 +65,7 @@
     "@types/qs": "^6.9.18",
     "@types/react": "19.2.7",
     "@types/react-dom": "^19.1.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "rimraf": "^6.0.1",
     "tsup": "^8.5.1",

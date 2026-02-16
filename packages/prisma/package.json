@@ -9,7 +9,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "require": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./dist/index.mjs"
     }
   },
   "files": [
@@ -20,30 +20,33 @@
     "db:generate": "prisma generate --schema=./schema.prisma",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:migrate": "prisma migrate dev",
     "db:migrate:init": "prisma migrate dev --name init",
     "db:migrate:changes": "prisma migrate dev --name changes_$(date +'%Y%m%d_%H%M%S')",
     "db:migrate:status": "prisma migrate status",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:reset": "prisma migrate reset --force",
     "studio": "prisma studio",
-    "build": "pnpm db:generate && tsup",
-    "dev": "pnpm db:generate && tsup --watch",
-    "clean": "rimraf dist"
+    "build": "tsup",
+    "build:types": "tsc --emitDeclarationOnly -p tsconfig.types.json",
+    "build:all": "pnpm build && pnpm build:types",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "dev": "concurrently --kill-others-on-fail -n TSUP,TYPES \"tsup --watch\" \"tsc -p tsconfig.types.json --watch --preserveWatchOutput --incremental\"",
+    "clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
-    "prisma": "^7.1.0",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "prisma": "^7.1.0"
   },
   "devDependencies": {
     "@prisma/config": "^7.1.0",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.16.0",
+    "concurrently": "^9.2.1",
     "dotenv": "^16.6.1",
-    "tsup": "^8.5.1",
     "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
     "typescript": "^5.5.3"
   }
 }

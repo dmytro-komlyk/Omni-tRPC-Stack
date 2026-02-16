@@ -1,12 +1,13 @@
+/* eslint-disable import-x/no-default-export */
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/theme-server.ts', 'src/theme-cookie.ts', 'src/ThemeProvider.tsx'],
-  format: ['esm', 'cjs'],
+  entry: ['src/index.ts'],
   dts: false,
   clean: process.env.NODE_ENV === 'production',
+  format: ['esm'],
   sourcemap: true,
   splitting: false,
   minify: process.env.NODE_ENV === 'production',
-  target: 'es2020',
+  target: 'es2022',
 });

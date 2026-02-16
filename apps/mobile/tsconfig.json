@@ -4,6 +4,9 @@
     "strict": true,
     "baseUrl": ".",
     "jsx": "react-native",
+    "target": "esnext",
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
     "allowJs": true,
     "isolatedModules": true,
     "esModuleInterop": true,
@@ -12,7 +15,11 @@
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "noEmit": true,
+    "noEmit": false,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
     "allowImportingTsExtensions": false,
     "paths": {
       "@/*": ["./*"]
@@ -24,11 +31,8 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "**/*.json",
-    "postcss.config.mjs",
     "nativewind.config.d.ts",
-    "nativewind-env.d.ts",
-    "metro.config.js",
-    "tailwind.config.js"
+    "nativewind-env.d.ts"
   ],
   "exclude": ["node_modules", "dist", ".expo"]
 }

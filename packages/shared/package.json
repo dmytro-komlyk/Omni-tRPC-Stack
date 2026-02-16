@@ -12,14 +12,14 @@
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch --onSuccess \"echo '✅ @package/shared: Watching...'\"",
-    "build:types": "tsc --emitDeclarationOnly",
-    "type-check": "tsc --noEmit",
+    "build:types": "tsc --emitDeclarationOnly -p tsconfig.types.json",
+    "build:all": "pnpm build && pnpm build:types",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "dev": "concurrently --kill-others-on-fail -n TSUP,TYPES \"tsup --watch\" \"tsc -p tsconfig.types.json --watch --preserveWatchOutput --incremental\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist tsconfig.tsbuildinfo"
   },
-  "dependencies": {},
   "peerDependencies": {
     "react": "^19.1.0"
   },
@@ -27,6 +27,7 @@
     "@package/eslint-config": "workspace:*",
     "@types/react": "19.2.7",
     "@types/react-dom": "^19.1.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "rimraf": "^6.0.1",
     "tsup": "^8.5.1",

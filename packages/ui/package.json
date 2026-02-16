@@ -7,25 +7,29 @@
   "exports": {
     "./theme-server": {
       "require": "./dist/theme-server.js",
-      "types": "./dist/theme-server.d.ts"
+      "types": "./dist/theme-server.d.ts",
+      "import": "./dist/heme-server.mjs"
     },
     "./theme-cookie": {
       "require": "./dist/theme-cookie.js",
-      "types": "./dist/theme-cookie.d.ts"
+      "types": "./dist/theme-cookie.d.ts",
+      "import": "./dist/theme-cookie.mjs"
     },
     "./ThemeProvider": {
       "require": "./dist/ThemeProvider.js",
-      "types": "./dist/ThemeProvider.d.ts"
+      "types": "./dist/ThemeProvider.d.ts",
+      "import": "./dist/ThemeProvider.mjs"
     }
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch --onSuccess \"echo '✅ @package/ui: Watching...'\"",
-    "build:types": "tsc --emitDeclarationOnly",
-    "type-check": "tsc --noEmit",
+    "build:types": "tsc --emitDeclarationOnly -p tsconfig.types.json",
+    "build:all": "pnpm build && pnpm build:types",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "dev": "concurrently --kill-others-on-fail -n TSUP,TYPES \"tsup --watch\" \"tsc -p tsconfig.types.json --watch --preserveWatchOutput --incremental\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@package/store": "workspace:^",
@@ -43,6 +47,7 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "^19.1.0",
     "@typescript-eslint/parser": "^8.48.1",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",

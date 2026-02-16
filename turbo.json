@@ -12,12 +12,12 @@
       "dependsOn": ["db:generate"],
       "env": ["DATABASE_URL"]
     },
-    "db:migrate": {
+    "db:migrate:init": {
       "cache": false,
       "dependsOn": ["db:generate"],
       "env": ["DATABASE_URL"]
     },
-    "db:migrate:init": {
+    "db:migrate:changes": {
       "cache": false,
       "dependsOn": ["db:generate"],
       "env": ["DATABASE_URL"]
@@ -51,21 +51,30 @@
       "persistent": true,
       "env": ["DATABASE_URL"]
     },
-    "type-check": {
-      "dependsOn": ["db:generate"],
-      "outputs": [".tsbuildinfo"],
-      "cache": true
-    },
     "build": {
       "dependsOn": ["db:generate", "^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", ".expo/**"],
-      "env": ["DATABASE_URL", "AUTH_DOMAIN"]
+      "env": ["APP_DOMAIN", "APP_HTTP_URL", "DATABASE_URL"]
+    },
+    "build:types": {
+      "dependsOn": ["db:generate", "^build:types"],
+      "outputs": ["dist/**/*.d.ts", "tsconfig.tsbuildinfo"],
+      "cache": true
+    },
+    "build:all": {
+      "dependsOn": ["build", "build:types"]
+    },
+    "type-check": {
+      "dependsOn": ["build:types"],
+      "outputs": ["tsconfig.tsbuildinfo"],
+      "cache": true
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true,
       "interactive": true,
-      "env": ["DATABASE_URL", "AUTH_DOMAIN"]
+      "env": ["APP_DOMAIN", "APP_HTTP_URL", "DATABASE_URL"]
     },
     "lint": {
       "cache": false,
@@ -76,12 +85,13 @@
       "env": []
     },
     "clean": {
-      "cache": false
+      "cache": false,
+      "outputs": []
     },
     "start": {
       "cache": false,
       "persistent": true,
-      "env": ["DATABASE_URL", "AUTH_DOMAIN"]
+      "env": ["APP_DOMAIN", "APP_HTTP_URL", "DATABASE_URL"]
     },
     "expo:export": {
       "dependsOn": ["^build"],

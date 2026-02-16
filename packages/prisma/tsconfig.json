@@ -1,19 +1,17 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "noEmit": false,
-    "allowImportingTsExtensions": false,
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist",
-    "skipLibCheck": true,
-    "strict": true,
+    "target": "ESNext",
     "module": "CommonJS",
     "moduleResolution": "node",
-    "target": "ESNext",
+    "strict": true,
+    "skipLibCheck": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "allowSyntheticDefaultImports": true
+    "composite": true,
+    "noEmit": true,
+    "incremental": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

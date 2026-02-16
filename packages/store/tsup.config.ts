@@ -1,14 +1,12 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: {
-    web: 'src/web/index.ts',
-    expo: 'src/expo/index.ts',
-  },
+  entry: ['src/secure.store.ts', 'src/auth.store.ts', 'src/ui.store.ts'],
   format: ['cjs', 'esm'],
-  dts: true,
-  clean: true,
+  dts: false,
+  clean: process.env.NODE_ENV === 'production',
   sourcemap: true,
-  minify: true,
+  splitting: false,
+  minify: process.env.NODE_ENV === 'production',
   target: 'es2020',
 });

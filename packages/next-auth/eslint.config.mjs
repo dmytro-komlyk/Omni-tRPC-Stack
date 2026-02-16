@@ -1,6 +1,7 @@
-import { defineConfig } from 'eslint/config';
+/* eslint-disable import-x/no-default-export */
 import { library } from '@package/eslint-config';
 import tsParser from '@typescript-eslint/parser';
+import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
   ...library,
