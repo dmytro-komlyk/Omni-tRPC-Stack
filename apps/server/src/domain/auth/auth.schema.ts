@@ -16,40 +16,99 @@ export type CheckTokenData = z.infer<typeof checkTokenSchema>;
 export type OutputCheckAuthData = z.infer<typeof outputCheckAuthSchema>;
 
 export const signInSchema = z.object({
-  email: z
-    .string()
-    .email('Введите корректный формат электронной почты')
-    .min(1, 'Введите адрес электронной почты'),
-  password: z.string().min(1, 'Введите свой пароль'),
+  email: z.string().email('Must be a valid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-export type SignInFormData = z.infer<typeof signInSchema>;
+export type SignInData = z.infer<typeof signInSchema>;
+
+export const signInProviderSchema = z.object({
+  email: z.string().email().min(1).nullable(),
+  provider: z.string().min(1),
+  providerAccountId: z.string().min(1),
+  firstName: z.string().min(1).nullable(),
+  lastName: z.string().min(1).nullable(),
+  nickName: z.string().min(1).nullable(),
+  avatarUrl: z.string().url().nullable(),
+});
+
+export type SignInProviderData = z.infer<typeof signInProviderSchema>;
 
 export const signUpSchema = z.object({
-  nickName: z
-    .string()
-    .min(3, 'Минимальное ник имя состоит из 3 символов')
-    .nonempty('Введите свое имя'),
-  email: z
-    .string()
-    .max(30, 'email не должен превышать 30 символов')
-    .email('Неверный адрес электронной почты')
-    .nonempty('Введите адрес электронной почты'),
-  password: z.string().min(6, 'Минимальное количество символов 6').nonempty('Введите свой пароль'),
-  passwordConfirmation: z.string().nonempty('Подтвердите свой пароль'),
+  email: z.string().email().min(1),
+  password: z.string().min(6),
+  nickName: z.string().min(3),
 });
 
-export type SignUpFormData = z.infer<typeof signUpSchema>;
+export type SignUpData = z.infer<typeof signUpSchema>;
+
+export const signUpFormSchema = z
+  .object({
+    nickName: z.string().min(3, 'Nickname too short').nonempty('Enter your name'),
+    email: z
+      .string()
+      .max(30, 'email must not exceed 30 characters')
+      .email('Invalid email address')
+      .nonempty('Enter your email address'),
+    password: z.string().min(6, 'Minimum character count is 6').nonempty('Enter your password'),
+    passwordConfirmation: z.string().nonempty('Confirm your password'),
+    isTwoFactorEnabled: z.boolean(),
+  })
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: "Passwords don't match",
+    path: ['passwordConfirmation'],
+  });
+
+export type SignUpFormData = z.infer<typeof signUpFormSchema>;
+
+export const signUpResponseSchema = z.object({
+  userId: z.string().min(1),
+  message: z.string().min(1),
+  success: z.boolean(),
+});
+
+export type SignUpResponseData = z.infer<typeof signUpResponseSchema>;
+
+export const outputSignOutSchema = z.object({
+  userId: z.string().nullable(),
+  success: z.boolean(),
+  message: z.string().min(1),
+  isLogined: z.boolean(),
+});
+
+export type OutputSignOutData = z.infer<typeof outputSignOutSchema>;
+
+export const resendVerificationEmailSchema = z.object({
+  email: z.string().email('Incorrect email'),
+});
+
+export type ResendVerificationEmailData = z.infer<typeof resendVerificationEmailSchema>;
+
+export const verifyEmailSchema = resendVerificationEmailSchema.extend({
+  token: z.string().min(1, 'Token is required'),
+});
+
+export type VerifyEmailData = z.infer<typeof verifyEmailSchema>;
+
+export const verifyEmailOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  userId: z.string().optional(),
+});
+
+export type VerifyEmailOutputData = z.infer<typeof verifyEmailOutputSchema>;
 
 export const outputAuthSchema = z.object({
-  id: z.string(),
-  nickName: z.string(),
-  email: z.string(),
-  isLogined: z.boolean(),
   accessToken: z.string(),
-  accessTokenExp: z.number(),
-  refreshToken: z.string(),
-  refreshTokenExp: z.number(),
+  accessTokenExp: z.date(),
+  refreshTokenExp: z.date(),
+  sessionToken: z.string(),
+  user: z.object({
+    id: z.string(),
+    email: z.string().nullable(),
+    nickName: z.string().nullable(),
+    avatarUrl: z.string().nullable(),
+  }),
 });
 
 export const inputBackendTokensSchema = z.object({
@@ -60,17 +119,23 @@ export const inputBackendTokensSchema = z.object({
 
 export const outputAccessTokenSchema = z.object({
   accessToken: z.string(),
-  accessTokenExp: z.number(),
+  accessTokenExp: z.date(),
 });
 
 export const outputBackendTokensSchema = outputAccessTokenSchema.extend({
   refreshToken: z.string(),
-  refreshTokenExp: z.number(),
+  refreshTokenExp: z.date(),
+});
+
+export const generateOptionsSchema = z.object({
+  updateAccess: z.boolean().default(false),
+  updateRefresh: z.boolean().default(false),
 });
 
 export type InputBackendTokens = z.infer<typeof inputBackendTokensSchema>;
 export type OutputAccessToken = z.infer<typeof outputAccessTokenSchema>;
 export type OutputBackendTokens = z.infer<typeof outputBackendTokensSchema>;
+export type GenerateOptions = z.infer<typeof generateOptionsSchema>;
 export type OutputAuthData = z.infer<typeof outputAuthSchema>;
 
 export const outputTokenSchema = z.object({
@@ -78,3 +143,37 @@ export const outputTokenSchema = z.object({
   type: z.enum(['ACCESS', 'REFRESH', 'RESET']),
   expires: z.number().int(),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Enter a valid email format').min(1, 'Enter email'),
+});
+
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+
+export const forgotPasswordOutputSchema = verifyEmailOutputSchema.extend({});
+
+export type ForgotPasswordOutputData = z.infer<typeof forgotPasswordOutputSchema>;
+
+export const resetPasswordFormSchema = z
+  .object({
+    password: z.string().min(6, 'Minimum character count is 6').nonempty('Enter your password'),
+    passwordConfirmation: z.string().nonempty('Confirm your password'),
+  })
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: "Passwords don't match",
+    path: ['passwordConfirmation'],
+  });
+
+export type ResetPasswordFormData = z.infer<typeof resetPasswordFormSchema>;
+
+export const resetPasswordSchema = z.object({
+  password: z.string().min(6),
+  email: z.string().email('Incorrect email'),
+  token: z.string().min(1, 'Token is required'),
+});
+
+export type ResetPasswordData = z.infer<typeof resetPasswordSchema>;
+
+export const resetPasswordOutputSchema = verifyEmailOutputSchema.extend({});
+
+export type ResetPasswordOutputData = z.infer<typeof resetPasswordOutputSchema>;

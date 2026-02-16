@@ -18,8 +18,16 @@ import { TrpcModule } from './trpc/trpc.module';
     }),
     LoggerModule.forRoot({
       pinoHttp: {
+        level: 'debug',
         transport: {
           target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'HH:MM:ss Z',
+            ignore: 'pid,hostname',
+            singleLine: false,
+            sync: true,
+          },
         },
       },
     }),

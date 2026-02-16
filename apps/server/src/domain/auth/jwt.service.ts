@@ -1,6 +1,8 @@
+import { prisma } from '@package/prisma';
+import { addDays, addHours } from 'date-fns';
 import jwt from 'jsonwebtoken';
 
-import { InputBackendTokens, OutputBackendTokens } from './auth.schema';
+import { GenerateOptions, InputBackendTokens, OutputBackendTokens } from './auth.schema';
 
 export const verifyToken = async ({
   type,
@@ -33,26 +35,67 @@ export const verifyToken = async ({
 };
 
 export async function generateBackendTokens(
-  payload: InputBackendTokens
+  payload: InputBackendTokens,
+  options: GenerateOptions = { updateAccess: true, updateRefresh: false }
 ): Promise<OutputBackendTokens> {
   const now = new Date();
+  const result: Partial<OutputBackendTokens> = {};
 
-  const accessTokenPayload = {
-    ...payload,
-    iat: Math.floor(now.getTime() / 1000),
-    exp: Math.floor(now.getTime() / 1000) + 60 * 60,
-  };
+  // 1. Access token
+  if (options.updateAccess) {
+    const accessExpDate = addHours(now, 1);
+    const accessExpUnix = Math.floor(accessExpDate.getTime() / 1000);
 
-  const refreshTokenPayload = {
-    ...payload,
-    iat: Math.floor(now.getTime() / 1000),
-    exp: Math.floor(now.getTime() / 1000) + 7 * 24 * 60 * 60,
-  };
+    const accessPayload = {
+      ...payload,
+      iat: Math.floor(now.getTime() / 1000),
+      exp: accessExpUnix,
+    };
 
-  return {
-    accessToken: jwt.sign(accessTokenPayload, process.env.JWT_ACCESS_TOKEN as string),
-    accessTokenExp: accessTokenPayload.exp,
-    refreshToken: jwt.sign(refreshTokenPayload, process.env.JWT_REFRESH_TOKEN as string),
-    refreshTokenExp: refreshTokenPayload.exp,
-  };
+    const accessToken = jwt.sign(accessPayload, process.env.JWT_ACCESS_TOKEN as string);
+
+    await prisma.token.upsert({
+      where: { userId_type: { userId: payload.sub, type: 'ACCESS' } },
+      update: { token: accessToken, expiresAt: accessExpDate },
+      create: {
+        userId: payload.sub,
+        type: 'ACCESS',
+        token: accessToken,
+        expiresAt: accessExpDate,
+      },
+    });
+
+    result.accessToken = accessToken;
+    result.accessTokenExp = accessExpDate;
+  }
+
+  // 2. Refresh token
+  if (options.updateRefresh) {
+    const refreshExpDate = addDays(now, 7);
+    const refreshExpUnix = Math.floor(refreshExpDate.getTime() / 1000);
+
+    const refreshPayload = {
+      ...payload,
+      iat: Math.floor(now.getTime() / 1000),
+      exp: refreshExpUnix,
+    };
+
+    const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_TOKEN as string);
+
+    await prisma.token.upsert({
+      where: { userId_type: { userId: payload.sub, type: 'REFRESH' } },
+      update: { token: refreshToken, expiresAt: refreshExpDate },
+      create: {
+        userId: payload.sub,
+        type: 'REFRESH',
+        token: refreshToken,
+        expiresAt: refreshExpDate,
+      },
+    });
+
+    result.refreshToken = refreshToken;
+    result.refreshTokenExp = refreshExpDate;
+  }
+
+  return result as OutputBackendTokens;
 }

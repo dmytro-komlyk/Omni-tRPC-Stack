@@ -18,33 +18,40 @@ import { appRouter } from './domain/trpc/trpc.router';
 dotenv.config();
 
 async function bootstrap() {
-  const logger = new PinoLogger({ renameContext: 'bootstrap' });
   const port = process.env.APP_PORT as string;
+
+  const bootstrapLogger = new PinoLogger({
+    pinoHttp: {
+      level: 'debug',
+      transport: { target: 'pino-pretty', options: { colorize: true } },
+    },
+  });
 
   try {
     const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
       bufferLogs: true,
     });
 
-    app.useLogger(app.get(Logger));
+    const logger = app.get(Logger);
+    app.useLogger(logger);
 
     await app.register(fastifyRateLimit, {
       max: 1000,
       timeWindow: '15 minutes',
     });
 
-    logger.info('Rate limit middleware registered');
+    logger.log('Rate limit middleware registered');
 
     await app.register<FastifyCorsOptions>(fastifyCors, {
       origin: [process.env.APP_WEBSITE_URL as string, process.env.APP_ADMIN_URL as string].filter(
         Boolean
       ),
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-session-token'],
       credentials: true,
     });
 
-    logger.info('CORS middleware registered');
+    logger.log('CORS middleware registered');
 
     await app.register(fastifyHelmet, {
       contentSecurityPolicy: {
@@ -62,7 +69,7 @@ async function bootstrap() {
         },
       },
     });
-    logger.info('Helmet middleware registered with CSP');
+    logger.log('Helmet middleware registered with CSP');
 
     await app.register(ws, {
       options: {
@@ -84,7 +91,7 @@ async function bootstrap() {
       },
     });
 
-    logger.info('WebSocket middleware registered');
+    logger.log('WebSocket middleware registered');
 
     await app.register(fastifyTRPCPlugin, {
       prefix: '/trpc',
@@ -103,7 +110,7 @@ async function bootstrap() {
       },
     } satisfies FastifyTRPCPluginOptions<typeof appRouter>);
 
-    logger.info('tRPC middleware registered');
+    logger.log('tRPC middleware registered');
 
     await app.register(fastifySwagger, {
       openapi: {
@@ -131,8 +138,8 @@ async function bootstrap() {
       staticCSP: true,
     });
 
-    logger.info(`Swagger UI available at ${process.env.APP_BASE_URL}/${process.env.APP_SWAGGER}`);
-    logger.info(
+    logger.log(`Swagger UI available at ${process.env.APP_BASE_URL}/${process.env.APP_SWAGGER}`);
+    logger.log(
       `OpenAPI JSON available at ${process.env.APP_BASE_URL}/${process.env.APP_SWAGGER}/json`
     );
 
@@ -149,28 +156,30 @@ async function bootstrap() {
       decorateReply: false,
     });
 
-    logger.info(`Static assets served from "${staticPath}" at prefix "${staticPrefix}"`);
+    logger.log(`Static assets served from "${staticPath}" at prefix "${staticPrefix}"`);
 
     await app.listen(port, '0.0.0.0');
-    logger.info(`Fastify Server is running on port ${port}`);
+    logger.log(`Fastify Server is running on port ${port}`);
 
     const shutdown = async (signal: string) => {
-      logger.info(`Received ${signal}. Closing server...`);
+      logger.log(`Received ${signal}. Closing server...`);
       await app.close();
-      logger.info('Server closed');
+      logger.log('Server closed');
       process.exit(0);
     };
 
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error: any) {
-    logger.error(`Failed to start server on port ${port}: ${error.message}`, error.stack);
+    bootstrapLogger.error(`Failed to start server on port ${port}: ${error.message}`, error.stack);
     process.exit(1);
   }
 }
 
 bootstrap().catch((err) => {
-  const logger = new PinoLogger({ renameContext: 'bootstrap' });
-  logger.error(`Bootstrap error: ${err.message}`, err.stack);
+  const finalLogger = new PinoLogger({
+    pinoHttp: { transport: { target: 'pino-pretty', options: { colorize: true } } },
+  });
+  finalLogger.error(`Bootstrap error: ${err.message}`, err.stack);
   process.exit(1);
 });

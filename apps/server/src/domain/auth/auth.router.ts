@@ -1,46 +1,46 @@
 import { JwtPayload } from 'jsonwebtoken';
-import z from 'zod';
 
 import { procedure, protectedProcedure, router } from '../trpc/trpc.server';
-import { outputUserSchema } from '../user/user.schema';
 import {
   checkTokenSchema,
+  ForgotPasswordOutputData,
+  forgotPasswordOutputSchema,
+  forgotPasswordSchema,
   inputBackendTokensSchema,
+  OutputAccessToken,
   outputAccessTokenSchema,
+  OutputAuthData,
   outputAuthSchema,
   outputCheckAuthSchema,
+  OutputSignOutData,
+  outputSignOutSchema,
+  resendVerificationEmailSchema,
+  ResetPasswordOutputData,
+  resetPasswordOutputSchema,
+  resetPasswordSchema,
+  signInProviderSchema,
   signInSchema,
+  SignUpResponseData,
+  signUpResponseSchema,
   signUpSchema,
+  VerifyEmailOutputData,
+  verifyEmailOutputSchema,
+  verifyEmailSchema,
 } from './auth.schema';
-import { signIn, signOut, signUp, updateAccessBackendToken } from './auth.service';
+import {
+  receivePasswordResetLink,
+  resendVerification,
+  resetPassword,
+  signIn,
+  signInProvider,
+  signOut,
+  signUp,
+  updateAccessBackendToken,
+  verifyEmail,
+} from './auth.service';
 import { verifyToken } from './jwt.service';
 
 export const authRouter = router({
-  checkToken: procedure
-    .meta({
-      openapi: {
-        enabled: true,
-        method: 'POST',
-        path: '/auth.checkToken',
-        summary: 'Checking the auth token',
-        tags: ['auth'],
-        protect: false,
-      },
-    })
-    .input(checkTokenSchema)
-    .output(outputCheckAuthSchema)
-    .mutation(async ({ input, ctx }) => {
-      try {
-        const token: JwtPayload = await verifyToken({
-          token: input.token,
-          type: input.type,
-        });
-        return { email: token.email };
-      } catch (error) {
-        ctx.logger.error({ error }, error instanceof Error ? error.message : 'Error in checkToken');
-        throw error;
-      }
-    }),
   login: procedure
     .meta({
       openapi: {
@@ -55,24 +55,47 @@ export const authRouter = router({
     .input(signInSchema)
     .output(outputAuthSchema)
     .mutation(async ({ input, ctx }) => {
-      try {
-        return await signIn({ ...input });
-      } catch (error) {
-        ctx.logger.error({ error }, error instanceof Error ? error.message : 'Error in login');
-        throw error;
-      }
+      const response: OutputAuthData = await signIn({ data: input, domain: ctx.domain });
+      ctx.logger.log({ email: response.user.email, path: 'auth.login' }, 'Login successfully');
+      return response;
+    }),
+  loginProvider: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.loginProvider',
+        summary: 'Login the user via provider',
+        tags: ['auth'],
+        protect: false,
+      },
+    })
+    .input(signInProviderSchema)
+    .output(outputAuthSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response = await signInProvider({ ...input });
+      ctx.logger.log(
+        { userId: response.user.id, path: 'auth.loginProvider' },
+        'Login provider successfully'
+      );
+      return response;
     }),
   logout: protectedProcedure
-    .input(z.void())
-    .output(z.object({ isLogined: z.boolean() }))
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.logout',
+        summary: 'Logout the user',
+        tags: ['auth'],
+        protect: true,
+      },
+    })
+    .output(outputSignOutSchema)
     .mutation(async ({ ctx }) => {
-      try {
-        const isLogined: boolean = await signOut(ctx.session.id);
-        return { isLogined };
-      } catch (error) {
-        ctx.logger.error({ error }, error instanceof Error ? error.message : 'Error in logout');
-        throw error;
-      }
+      const response: OutputSignOutData = await signOut(ctx.sessionToken as string);
+      ctx.logger.log({ userId: response.userId, path: 'auth.logout' }, response.message);
+      return response;
     }),
   register: procedure
     .meta({
@@ -82,25 +105,43 @@ export const authRouter = router({
         path: '/auth.register',
         summary: 'Register a new user',
         tags: ['auth'],
-        protect: true,
+        protect: false,
       },
     })
     .input(signUpSchema)
-    .output(outputUserSchema)
+    .output(signUpResponseSchema)
     .mutation(async ({ input, ctx }) => {
-      try {
-        return await signUp(input);
-      } catch (error) {
-        ctx.logger.error({ error }, error instanceof Error ? error.message : 'Error in register');
-        throw error;
-      }
+      const response: SignUpResponseData = await signUp({ data: input, domain: ctx.domain });
+      ctx.logger.log({ userId: response.userId, path: 'auth.register' }, response.message);
+      return response;
     }),
-  updateAccessBackendToken: protectedProcedure
+  checkToken: procedure
     .meta({
       openapi: {
         enabled: true,
         method: 'POST',
-        path: '/auth.updateAccessBackendToken',
+        path: '/auth.checkToken',
+        summary: 'Checking the auth token',
+        tags: ['auth'],
+        protect: true,
+      },
+    })
+    .input(checkTokenSchema)
+    .output(outputCheckAuthSchema)
+    .mutation(async ({ input, ctx }) => {
+      const token: JwtPayload = await verifyToken({
+        token: input.token,
+        type: input.type,
+      });
+      ctx.logger.log({ input, path: 'auth.checkToken' }, 'Check token successfully');
+      return { email: token.email };
+    }),
+  refresh: protectedProcedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.refresh',
         summary: 'Update access backend token',
         tags: ['auth'],
         protect: true,
@@ -109,14 +150,92 @@ export const authRouter = router({
     .input(inputBackendTokensSchema)
     .output(outputAccessTokenSchema)
     .mutation(async ({ input, ctx }) => {
-      try {
-        return await updateAccessBackendToken({ ...input });
-      } catch (error) {
-        ctx.logger.error(
-          { error },
-          error instanceof Error ? error.message : 'Error in updateAccessBackendToken'
-        );
-        throw error;
-      }
+      const response: OutputAccessToken = await updateAccessBackendToken({ ...input });
+      ctx.logger.log({ input, path: 'auth.refresh' }, 'Refresh token successfully');
+      return response;
+    }),
+  verifyEmail: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.verifyEmail',
+        summary: 'Verify the email of a user using the token from email',
+        tags: ['auth'],
+        protect: false,
+      },
+    })
+    .input(verifyEmailSchema)
+    .output(verifyEmailOutputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response: VerifyEmailOutputData = await verifyEmail(input);
+      ctx.logger.log(
+        { email: input.email, path: 'auth.verifyEmail' },
+        'Email verified successfully'
+      );
+      return response;
+    }),
+  resendVerification: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.resendVerification',
+        summary: 'Resend the verification email',
+        tags: ['auth'],
+        protect: false,
+      },
+    })
+    .input(resendVerificationEmailSchema)
+    .output(verifyEmailOutputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response: VerifyEmailOutputData = await resendVerification({
+        data: input,
+        domain: ctx.domain,
+      });
+      ctx.logger.log({ email: input.email, path: 'auth.resendVerification' }, response.message);
+      return response;
+    }),
+  forgotPassword: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.forgotPassword',
+        summary: 'Receive a password reset link',
+        tags: ['auth'],
+        protect: false,
+      },
+    })
+    .input(forgotPasswordSchema)
+    .output(forgotPasswordOutputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response: ForgotPasswordOutputData = await receivePasswordResetLink({
+        data: input,
+        domain: ctx.domain,
+      });
+      ctx.logger.log({ email: input.email, path: 'auth.forgotPassword' }, response.message);
+      return response;
+    }),
+  resetPassword: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.resetPassword',
+        summary: 'Update user password',
+        tags: ['auth'],
+        protect: false,
+      },
+    })
+    .input(resetPasswordSchema)
+    .output(resetPasswordOutputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response: ResetPasswordOutputData = await resetPassword({
+        data: input,
+        domain: ctx.domain,
+      });
+      ctx.logger.log({ email: input.email, path: 'auth.resetPassword' }, response.message);
+      return response;
     }),
 });

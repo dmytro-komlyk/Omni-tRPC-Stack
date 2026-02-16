@@ -1,25 +1,39 @@
 import { INestApplicationContext } from '@nestjs/common';
+import { prisma } from '@package/prisma';
 import { inferAsyncReturnType } from '@trpc/server';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { JwtPayload } from 'jsonwebtoken';
-import { PinoLogger } from 'nestjs-pino';
+import { Logger, PinoLogger } from 'nestjs-pino';
 
-import { verifyToken } from '../auth/jwt.service';
+export type Domain = {
+  host: string | null;
+  origin: string | null;
+};
 
 // ---- Context SSR / Next.js ----
 export type ServerContext = {
-  session: { id: string; accessToken: string } | null;
+  user: {
+    id: string;
+    email: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    nickName: string | null;
+    avatarUrl: string | null;
+    emailVerified: Date | null;
+    isTwoFactorEnabled: boolean;
+  } | null;
+  sessionToken: string | null;
 };
 
 // ---- Context NestJS ----
 export type FullServerContext = ServerContext & {
-  logger: PinoLogger;
+  logger: Logger;
+  domain: Domain;
 };
 
 // ---- NestJS / Fastify ----
 export interface FastifyContextOptions {
   app: INestApplicationContext;
-  logger: PinoLogger;
+  logger: Logger;
   req?: FastifyRequest;
   res?: FastifyReply;
   connection?: {
@@ -32,46 +46,117 @@ export async function createContext({
   connection,
   logger,
 }: FastifyContextOptions): Promise<FullServerContext> {
-  const getAuthHeader = (): string | null => {
-    if (req?.headers.authorization) {
-      const header = req.headers.authorization;
-      return Array.isArray(header) ? (header[0] ?? null) : header;
-    }
+  const loggerContext =
+    logger ??
+    new PinoLogger({
+      pinoHttp: {
+        transport: { target: 'pino-pretty', options: { colorize: true } },
+      },
+    });
 
-    if (connection?.headers.authorization) {
-      const header = connection.headers.authorization;
-      return Array.isArray(header) ? (header[0] ?? null) : header;
-    }
+  const headers = req?.headers || connection?.headers || {};
+  const host = (headers['host'] as string) || null;
+  const origin = (headers['origin'] as string) || null;
 
-    return null;
-  };
-  const authHeader = getAuthHeader();
-  let session: FullServerContext['session'] = null;
+  const cleanHost = host?.split(':')[0] || null;
 
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice(7);
+  let user: ServerContext['user'] = null;
+  const sessionToken = headers['x-session-token'] as string | null;
 
-    logger.debug({ token: token.substring(0, 10) + '...' }, 'Attempting to verify access token');
+  if (sessionToken) {
+    logger.debug({ sessionToken: sessionToken.substring(0, 10) + '...' }, 'Session check');
 
     try {
-      const payload: JwtPayload = await verifyToken({
-        type: 'access',
-        token,
+      const dbSession = await prisma.session.findUnique({
+        where: { sessionToken },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              nickName: true,
+              avatarUrl: true,
+              emailVerified: true,
+              isTwoFactorEnabled: true,
+              failedLoginAttempts: true,
+              lockedUntil: true,
+            },
+          },
+        },
       });
-      if (payload.sub) {
-        session = { id: payload.sub, accessToken: token };
-        logger.info({ userId: payload.sub }, 'User authenticated via token');
+
+      if (dbSession && dbSession.expiresAt > new Date()) {
+        const newExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        await prisma.session.update({
+          where: { sessionToken },
+          data: { expiresAt: newExpires },
+        });
+
+        await prisma.user.update({
+          where: { id: dbSession.userId },
+          data: {
+            lastActiveAt: new Date(),
+            isOnline: true,
+          },
+        });
+
+        user = dbSession.user;
+        logger.log({ userId: dbSession.userId }, 'Session confirmed');
+      } else {
+        logger.warn('Session not found or expired');
       }
-    } catch (error: any) {
-      logger.warn(`Invalid token in tRPC context: ${error.message}`);
+    } catch (err) {
+      logger.error('Error checking session', err);
     }
   } else {
-    logger.debug('No Authorization header found');
+    logger.debug('No session token provided');
   }
 
+  // const authHeader = headers.authorization as string | undefined;
+
+  // if (!user && authHeader?.startsWith('Bearer ')) {
+  //   const token = authHeader.slice(7);
+  //   logger.debug({ token: token.substring(0, 10) + '...' }, 'Checking JWT as fallback');
+
+  //   try {
+  //     const payload: JwtPayload = await verifyToken({ token, type: 'access' });
+  //     if (payload.sub) {
+  //       const dbUser = await prisma.user.findUnique({
+  //         where: { id: payload.sub },
+  //         select: {
+  //           id: true,
+  //           email: true,
+  //           firstName: true,
+  //           lastName: true,
+  //           nickName: true,
+  //           avatarUrl: true,
+  //           emailVerified: true,
+  //           isTwoFactorEnabled: true,
+  //           failedLoginAttempts: true,
+  //           lockedUntil: true,
+  //         },
+  //       });
+
+  //       if (dbUser) {
+  //         user = dbUser;
+  //         logger.info({ userId: payload.sub }, 'JWT confirmed as fallback');
+  //       }
+  //     }
+  //   } catch (err) {
+  //     logger.warn('Invalid JWT', err);
+  //   }
+  // }
+
   return {
-    session,
-    logger,
+    sessionToken,
+    user,
+    logger: loggerContext,
+    domain: {
+      host: cleanHost,
+      origin: origin,
+    },
   };
 }
 
