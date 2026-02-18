@@ -47,7 +47,7 @@ async function bootstrap() {
         Boolean
       ),
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-session-token'],
+      allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-session-token', 'x-client-id'],
       credentials: true,
     });
 

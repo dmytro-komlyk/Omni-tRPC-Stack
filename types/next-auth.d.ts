@@ -11,6 +11,7 @@ declare module 'next-auth' {
     accessTokenExp: Date | string | number; // Бэкенд может вернуть строку или дату
     refreshTokenExp: Date | string | number;
     sessionToken: string;
+    clientId: string | undefined;
   }
 
   interface Session {

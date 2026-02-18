@@ -10,6 +10,7 @@ import {
   OutputAccessToken,
   outputAccessTokenSchema,
   OutputAuthData,
+  outputAuthProviderSchema,
   outputAuthSchema,
   outputCheckAuthSchema,
   OutputSignOutData,
@@ -71,9 +72,9 @@ export const authRouter = router({
       },
     })
     .input(signInProviderSchema)
-    .output(outputAuthSchema)
+    .output(outputAuthProviderSchema)
     .mutation(async ({ input, ctx }) => {
-      const response = await signInProvider({ ...input });
+      const response = await signInProvider({ data: input, domain: ctx.domain });
       ctx.logger.log(
         { userId: response.user.id, path: 'auth.loginProvider' },
         'Login provider successfully'
@@ -93,7 +94,10 @@ export const authRouter = router({
     })
     .output(outputSignOutSchema)
     .mutation(async ({ ctx }) => {
-      const response: OutputSignOutData = await signOut(ctx.sessionToken as string);
+      const response: OutputSignOutData = await signOut({
+        userId: ctx.user.id,
+        sessionToken: ctx.sessionToken,
+      });
       ctx.logger.log({ userId: response.userId, path: 'auth.logout' }, response.message);
       return response;
     }),
@@ -150,8 +154,11 @@ export const authRouter = router({
     .input(inputBackendTokensSchema)
     .output(outputAccessTokenSchema)
     .mutation(async ({ input, ctx }) => {
-      const response: OutputAccessToken = await updateAccessBackendToken({ ...input });
-      ctx.logger.log({ input, path: 'auth.refresh' }, 'Refresh token successfully');
+      const response: OutputAccessToken = await updateAccessBackendToken({
+        payload: input,
+        domain: ctx.domain,
+      });
+      ctx.logger.log({ input, path: 'auth.refresh' }, 'Refresh access token successfully');
       return response;
     }),
   verifyEmail: procedure

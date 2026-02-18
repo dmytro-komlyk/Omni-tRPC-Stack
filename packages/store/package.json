@@ -19,6 +19,11 @@
       "require": "./dist/ui.store.js",
       "types": "./dist/ui.store.d.ts",
       "import": "./dist/ui.store.mjs"
+    },
+    "./config": {
+      "require": "./dist/config.store.js",
+      "types": "./dist/config.store.d.ts",
+      "import": "./dist/config.store.mjs"
     }
   },
   "scripts": {

@@ -2,8 +2,25 @@ import type { AuthConfig } from '@auth/core';
 import { getRemoteServerClient } from '@package/api/server';
 import { CredentialsSignin, type Session, type User } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
+/* Providers */
+import AppleProvider from 'next-auth/providers/apple';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import FacebookProvider from 'next-auth/providers/facebook';
 import GoogleProvider from 'next-auth/providers/google';
+
+async function getClientContext() {
+  const { headers, cookies } = await import('next/headers');
+  const h = await headers();
+  const c = await cookies();
+  const clientId = h.get('x-client-id') || c.get('x-client-id')?.value || undefined;
+
+  return {
+    ua: h.get('user-agent') || undefined,
+    origin: h.get('origin') || undefined,
+    host: h.get('host') || undefined,
+    clientId,
+  };
+}
 
 export const authOptions: AuthConfig = {
   debug: true,
@@ -13,6 +30,15 @@ export const authOptions: AuthConfig = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      allowDangerousEmailAccountLinking: true,
+    }),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID as string,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
+    }),
+    AppleProvider({
+      clientId: process.env.APPLE_ID as string,
+      clientSecret: process.env.APPLE_SECRET as string,
     }),
     CredentialsProvider({
       id: 'login',
@@ -22,21 +48,28 @@ export const authOptions: AuthConfig = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials): Promise<User> {
+        const ctx = await getClientContext();
+
         try {
-          const remoteServerClient = getRemoteServerClient();
-          const response = await remoteServerClient.auth.login.mutate(
-            credentials as { email: string; password: string }
-          );
+          const remoteServerClient = getRemoteServerClient(null, {
+            'user-agent': ctx.ua,
+            origin: ctx.origin,
+            host: ctx.host,
+            'x-client-id': ctx.clientId,
+          });
+
+          const response = await remoteServerClient.auth.login.mutate({
+            email: credentials.email as string,
+            password: credentials.password as string,
+          });
 
           return {
-            id: response.user.id,
-            email: response.user.email,
-            nickName: response.user.nickName,
-            avatarUrl: response.user.avatarUrl,
+            ...response.user,
             accessToken: response.accessToken,
             accessTokenExp: response.accessTokenExp,
             refreshTokenExp: response.refreshTokenExp,
             sessionToken: response.sessionToken,
+            clientId: ctx.clientId,
           };
         } catch (error: any) {
           console.error('Authorize Error:', error.message);
@@ -52,6 +85,8 @@ export const authOptions: AuthConfig = {
   useSecureCookies: process.env.NODE_ENV === 'production',
   session: {
     strategy: 'jwt',
+    // maxAge: 5 * 60, // for test
+    // updateAge: 60, // for test
     maxAge: 30 * 24 * 60 * 60,
     updateAge: 24 * 60 * 60,
   },
@@ -100,16 +135,32 @@ export const authOptions: AuthConfig = {
   },
   callbacks: {
     signIn: async ({ user, account, profile }): Promise<boolean> => {
-      const remoteServerClient = getRemoteServerClient();
+      const ctx = await getClientContext();
+
+      const remoteServerClient = getRemoteServerClient(null, {
+        'user-agent': ctx.ua,
+        origin: ctx.origin,
+        host: ctx.host,
+        'x-client-id': ctx.clientId,
+      });
+
       if (account && account?.provider !== 'login') {
         try {
           const response = await remoteServerClient.auth.loginProvider.mutate({
             email: user.email || null,
-            nickName: user.email?.split('@')[0] || null,
+            nickName: user.name || user.email?.split('@')[0] || 'user',
             provider: account.provider,
             providerAccountId: account.providerAccountId,
-            firstName: profile?.given_name as string,
-            lastName: profile?.family_name as string,
+            firstName:
+              profile?.given_name ||
+              (profile as any)?.first_name ||
+              user.name?.split(' ')[0] ||
+              null,
+            lastName:
+              profile?.family_name ||
+              (profile as any)?.last_name ||
+              user.name?.split(' ')[1] ||
+              null,
             avatarUrl: user.image as string,
           });
 
@@ -118,10 +169,12 @@ export const authOptions: AuthConfig = {
           user.accessTokenExp = response.accessTokenExp;
           user.refreshTokenExp = response.refreshTokenExp;
           user.nickName = response.user.nickName;
+          user.sessionToken = response.sessionToken;
+          user.clientId = ctx.clientId;
 
           return true;
         } catch (error) {
-          console.error('LoginProvider Error:', error);
+          console.error('SignIn Provider Error:', error);
           return false;
         }
       }
@@ -131,7 +184,8 @@ export const authOptions: AuthConfig = {
     jwt: async ({ token, user }: { token: JWT; user: User }): Promise<JWT> => {
       console.log(`Auth JWT Token = ${JSON.stringify(token)}`);
       console.log(`Auth JWT User = ${JSON.stringify(user)}`);
-      const remoteServerClient = getRemoteServerClient(token.sessionToken);
+      const ctx = await getClientContext();
+
       if (user) {
         return {
           ...token,
@@ -142,6 +196,7 @@ export const authOptions: AuthConfig = {
           sessionToken: user.sessionToken as string,
           accessTokenExp: Math.floor(new Date(user.accessTokenExp).getTime() / 1000),
           refreshTokenExp: Math.floor(new Date(user.refreshTokenExp).getTime() / 1000),
+          clientId: user.clientId || ctx.clientId,
           error: undefined,
         };
       }
@@ -158,6 +213,13 @@ export const authOptions: AuthConfig = {
         return token;
       }
       try {
+        const remoteServerClient = getRemoteServerClient(token.sessionToken, {
+          'user-agent': ctx.ua,
+          'x-client-id': (token.clientId as string) || ctx.clientId,
+          host: ctx.host,
+          origin: ctx.origin,
+        });
+
         const updated = await remoteServerClient.auth.refresh.mutate({
           email: token.email as string,
           sub: token.id as string,

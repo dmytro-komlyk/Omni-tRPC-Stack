@@ -1,12 +1,19 @@
+import * as crypto from 'node:crypto';
+
 import { INestApplicationContext } from '@nestjs/common';
 import { prisma } from '@package/prisma';
 import { inferAsyncReturnType } from '@trpc/server';
 import { FastifyReply, FastifyRequest } from 'fastify';
+import { JwtPayload } from 'jsonwebtoken';
 import { Logger, PinoLogger } from 'nestjs-pino';
+
+import { verifyToken } from '../auth/jwt.service';
 
 export type Domain = {
   host: string | null;
   origin: string | null;
+  userAgent: string | null;
+  clientId: string | null;
 };
 
 // ---- Context SSR / Next.js ----
@@ -57,12 +64,21 @@ export async function createContext({
   const headers = req?.headers || connection?.headers || {};
   const host = (headers['host'] as string) || null;
   const origin = (headers['origin'] as string) || null;
+  const userAgent = (headers['user-agent'] as string) || null;
+  const ip = (headers['x-forwarded-for'] as string) || req?.ip || 'unknown';
+
+  let clientId = (headers['x-client-id'] as string) || null;
+
+  if (!clientId && userAgent) {
+    clientId = crypto.createHash('md5').update(`${userAgent}-${ip}`).digest('hex');
+  }
 
   const cleanHost = host?.split(':')[0] || null;
 
   let user: ServerContext['user'] = null;
   const sessionToken = headers['x-session-token'] as string | null;
 
+  // Web
   if (sessionToken) {
     logger.debug({ sessionToken: sessionToken.substring(0, 10) + '...' }, 'Session check');
 
@@ -114,40 +130,42 @@ export async function createContext({
     logger.debug('No session token provided');
   }
 
-  // const authHeader = headers.authorization as string | undefined;
+  // Mobile
+  const authHeader = headers.authorization as string | undefined;
 
-  // if (!user && authHeader?.startsWith('Bearer ')) {
-  //   const token = authHeader.slice(7);
-  //   logger.debug({ token: token.substring(0, 10) + '...' }, 'Checking JWT as fallback');
+  if (!user && authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    logger.debug({ token: token.substring(0, 10) + '...' }, 'Checking JWT as fallback');
 
-  //   try {
-  //     const payload: JwtPayload = await verifyToken({ token, type: 'access' });
-  //     if (payload.sub) {
-  //       const dbUser = await prisma.user.findUnique({
-  //         where: { id: payload.sub },
-  //         select: {
-  //           id: true,
-  //           email: true,
-  //           firstName: true,
-  //           lastName: true,
-  //           nickName: true,
-  //           avatarUrl: true,
-  //           emailVerified: true,
-  //           isTwoFactorEnabled: true,
-  //           failedLoginAttempts: true,
-  //           lockedUntil: true,
-  //         },
-  //       });
+    try {
+      const payload: JwtPayload = await verifyToken({ token, type: 'access' });
 
-  //       if (dbUser) {
-  //         user = dbUser;
-  //         logger.info({ userId: payload.sub }, 'JWT confirmed as fallback');
-  //       }
-  //     }
-  //   } catch (err) {
-  //     logger.warn('Invalid JWT', err);
-  //   }
-  // }
+      if (payload.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: payload.sub },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            nickName: true,
+            avatarUrl: true,
+            emailVerified: true,
+            isTwoFactorEnabled: true,
+            failedLoginAttempts: true,
+            lockedUntil: true,
+          },
+        });
+
+        if (dbUser) {
+          user = dbUser;
+          logger.log({ userId: dbUser.id }, 'Authenticated via JWT (Mobile)');
+        }
+      }
+    } catch (err) {
+      logger.warn('Invalid JWT provided in Authorization header', err);
+    }
+  }
 
   return {
     sessionToken,
@@ -156,6 +174,8 @@ export async function createContext({
     domain: {
       host: cleanHost,
       origin: origin,
+      userAgent: userAgent,
+      clientId: clientId,
     },
   };
 }

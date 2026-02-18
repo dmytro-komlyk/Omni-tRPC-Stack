@@ -4,14 +4,30 @@ import { persist } from 'zustand/middleware';
 
 import { deleteTokens, getAccessToken, getRefreshToken, saveTokens } from './secure.store';
 
+interface User {
+  id: string;
+  email: string | null;
+  nickName: string | null;
+  avatarUrl: string | null;
+}
+
 interface AuthState {
+  user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 
-  login: (access: string, refresh: string) => Promise<void>;
+  login: ({
+    user,
+    access,
+    refresh,
+  }: {
+    user: User;
+    access: string;
+    refresh: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -25,17 +41,19 @@ const secureStorage = {
 export const useAuthStore = create<AuthState>()(
   persist<AuthState>(
     (set) => ({
+      user: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
       isLoading: true,
       error: null,
 
-      login: async (access, refresh) => {
+      login: async ({ user, access, refresh }) => {
         try {
           set({ isLoading: true, error: null });
           await saveTokens(access, refresh);
           set({
+            user,
             accessToken: access,
             refreshToken: refresh,
             isAuthenticated: true,
@@ -51,6 +69,7 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true, error: null });
           await deleteTokens();
           set({
+            user: null,
             accessToken: null,
             refreshToken: null,
             isAuthenticated: false,
@@ -98,6 +117,7 @@ export const useAuthStore = create<AuthState>()(
       },
       partialize: (state) =>
         ({
+          user: state.user,
           accessToken: state.accessToken,
           refreshToken: state.refreshToken,
           isAuthenticated: state.isAuthenticated,

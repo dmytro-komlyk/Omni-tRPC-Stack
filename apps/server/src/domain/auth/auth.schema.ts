@@ -16,11 +16,18 @@ export type CheckTokenData = z.infer<typeof checkTokenSchema>;
 export type OutputCheckAuthData = z.infer<typeof outputCheckAuthSchema>;
 
 export const signInSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+});
+
+export type SignInData = z.infer<typeof signInSchema>;
+
+export const signInFormSchema = z.object({
   email: z.string().email('Must be a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-export type SignInData = z.infer<typeof signInSchema>;
+export type SignInFormData = z.infer<typeof signInSchema>;
 
 export const signInProviderSchema = z.object({
   email: z.string().email().min(1).nullable(),
@@ -30,6 +37,7 @@ export const signInProviderSchema = z.object({
   lastName: z.string().min(1).nullable(),
   nickName: z.string().min(1).nullable(),
   avatarUrl: z.string().url().nullable(),
+  clientId: z.string().optional(),
 });
 
 export type SignInProviderData = z.infer<typeof signInProviderSchema>;
@@ -69,6 +77,13 @@ export const signUpResponseSchema = z.object({
 
 export type SignUpResponseData = z.infer<typeof signUpResponseSchema>;
 
+export const signOutSchema = z.object({
+  userId: z.string(),
+  sessionToken: z.string().nullable(),
+});
+
+export type SignOutData = z.infer<typeof signOutSchema>;
+
 export const outputSignOutSchema = z.object({
   userId: z.string().nullable(),
   success: z.boolean(),
@@ -101,6 +116,7 @@ export type VerifyEmailOutputData = z.infer<typeof verifyEmailOutputSchema>;
 export const outputAuthSchema = z.object({
   accessToken: z.string(),
   accessTokenExp: z.date(),
+  refreshToken: z.string().optional(),
   refreshTokenExp: z.date(),
   sessionToken: z.string(),
   user: z.object({
@@ -110,6 +126,8 @@ export const outputAuthSchema = z.object({
     avatarUrl: z.string().nullable(),
   }),
 });
+
+export const outputAuthProviderSchema = outputAuthSchema.extend({});
 
 export const inputBackendTokensSchema = z.object({
   email: z.string().email(),
@@ -137,6 +155,7 @@ export type OutputAccessToken = z.infer<typeof outputAccessTokenSchema>;
 export type OutputBackendTokens = z.infer<typeof outputBackendTokensSchema>;
 export type GenerateOptions = z.infer<typeof generateOptionsSchema>;
 export type OutputAuthData = z.infer<typeof outputAuthSchema>;
+export type OutputAuthProviderData = z.infer<typeof outputAuthProviderSchema>;
 
 export const outputTokenSchema = z.object({
   id: z.string(),

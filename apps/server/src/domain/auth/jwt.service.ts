@@ -36,14 +36,20 @@ export const verifyToken = async ({
 
 export async function generateBackendTokens(
   payload: InputBackendTokens,
-  options: GenerateOptions = { updateAccess: true, updateRefresh: false }
+  options: GenerateOptions & { clientId?: string | undefined; userAgent?: string | undefined } = {
+    updateAccess: true,
+    updateRefresh: false,
+  }
 ): Promise<OutputBackendTokens> {
   const now = new Date();
   const result: Partial<OutputBackendTokens> = {};
+  const userId = payload.sub;
+  const clientId = options.clientId || 'unknown';
 
   // 1. Access token
   if (options.updateAccess) {
     const accessExpDate = addHours(now, 1);
+    // const accessExpDate = addMinutes(now, 2); // for test
     const accessExpUnix = Math.floor(accessExpDate.getTime() / 1000);
 
     const accessPayload = {
@@ -54,16 +60,32 @@ export async function generateBackendTokens(
 
     const accessToken = jwt.sign(accessPayload, process.env.JWT_ACCESS_TOKEN as string);
 
-    await prisma.token.upsert({
-      where: { userId_type: { userId: payload.sub, type: 'ACCESS' } },
-      update: { token: accessToken, expiresAt: accessExpDate },
-      create: {
-        userId: payload.sub,
-        type: 'ACCESS',
-        token: accessToken,
-        expiresAt: accessExpDate,
-      },
-    });
+    await prisma.token
+      .upsert({
+        where: {
+          userId_type_clientId: {
+            userId,
+            type: 'ACCESS',
+            clientId,
+          },
+        },
+        update: {
+          token: accessToken,
+          expiresAt: accessExpDate,
+          userAgent: options.userAgent ?? null,
+        },
+        create: {
+          userId,
+          type: 'ACCESS',
+          token: accessToken,
+          expiresAt: accessExpDate,
+          clientId,
+          userAgent: options.userAgent ?? null,
+        },
+      })
+      .catch(() => {
+        // Fallback если upsert по токену невозможен
+      });
 
     result.accessToken = accessToken;
     result.accessTokenExp = accessExpDate;
@@ -72,6 +94,7 @@ export async function generateBackendTokens(
   // 2. Refresh token
   if (options.updateRefresh) {
     const refreshExpDate = addDays(now, 7);
+    // const refreshExpDate = addMinutes(now, 10); // for test
     const refreshExpUnix = Math.floor(refreshExpDate.getTime() / 1000);
 
     const refreshPayload = {
@@ -83,13 +106,25 @@ export async function generateBackendTokens(
     const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_TOKEN as string);
 
     await prisma.token.upsert({
-      where: { userId_type: { userId: payload.sub, type: 'REFRESH' } },
-      update: { token: refreshToken, expiresAt: refreshExpDate },
+      where: {
+        userId_type_clientId: {
+          userId,
+          type: 'REFRESH',
+          clientId,
+        },
+      },
+      update: {
+        token: refreshToken,
+        expiresAt: refreshExpDate,
+        userAgent: options.userAgent ?? null,
+      },
       create: {
-        userId: payload.sub,
+        userId,
         type: 'REFRESH',
         token: refreshToken,
         expiresAt: refreshExpDate,
+        clientId,
+        userAgent: options.userAgent ?? null,
       },
     });
 

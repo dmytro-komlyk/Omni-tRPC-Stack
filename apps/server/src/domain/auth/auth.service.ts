@@ -10,13 +10,14 @@ import {
   InputBackendTokens,
   OutputAccessToken,
   OutputAuthData,
-  OutputBackendTokens,
+  OutputAuthProviderData,
   OutputSignOutData,
   ResendVerificationEmailData,
   ResetPasswordData,
   ResetPasswordOutputData,
   SignInData,
   SignInProviderData,
+  SignOutData,
   SignUpData,
   SignUpResponseData,
   VerifyEmailOutputData,
@@ -32,6 +33,7 @@ export async function signIn({
 }): Promise<OutputAuthData> {
   const user = await prisma.user.findUnique({
     where: { email: data.email },
+    include: { accounts: true },
   });
 
   if (!user) {
@@ -43,9 +45,15 @@ export async function signIn({
   }
 
   if (!user.password) {
+    const providerNames = user.accounts
+      .map(({ provider }: { provider: string }) => {
+        return provider.charAt(0).toUpperCase() + provider.slice(1);
+      })
+      .join(', ');
+
     throw new TRPCError({
       code: 'BAD_REQUEST',
-      message: 'User registered via provider. Please use provider login.',
+      message: `It looks like you previously signed up with ${providerNames}. Please use that method to log in.`,
     });
   }
 
@@ -130,6 +138,8 @@ export async function signIn({
     });
   }
 
+  const isWeb = !!domain.origin;
+
   await prisma.user.update({
     where: { id: user.id },
     data: {
@@ -140,27 +150,36 @@ export async function signIn({
     },
   });
 
-  const { accessToken, accessTokenExp, refreshTokenExp } = await generateBackendTokens(
-    {
-      sub: user.id,
-      email: user.email as string,
-    },
-    { updateAccess: true, updateRefresh: true }
-  );
+  const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+    await generateBackendTokens(
+      {
+        sub: user.id,
+        email: user.email as string,
+      },
+      {
+        updateAccess: true,
+        updateRefresh: true,
+        clientId: domain.clientId ?? 'unknown',
+        userAgent: domain.userAgent ?? undefined,
+      }
+    );
 
   const sessionToken = crypto.randomUUID();
   const sessionExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-  await prisma.session.create({
-    data: {
-      sessionToken,
-      userId: user.id,
-      expiresAt: sessionExpires,
-    },
-  });
+  if (isWeb) {
+    await prisma.session.create({
+      data: {
+        sessionToken,
+        userId: user.id,
+        expiresAt: sessionExpires,
+      },
+    });
+  }
 
   return {
     accessToken,
+    refreshToken,
     accessTokenExp,
     refreshTokenExp,
     sessionToken,
@@ -304,17 +323,24 @@ export async function resendVerification({
   };
 }
 
-export async function signInProvider(data: SignInProviderData): Promise<OutputAuthData> {
-  let user = await prisma.user.findFirst({
+export async function signInProvider({
+  data,
+  domain,
+}: {
+  data: SignInProviderData;
+  domain: Domain;
+}): Promise<OutputAuthProviderData> {
+  const existingAccount = await prisma.account.findUnique({
     where: {
-      accounts: {
-        some: {
-          provider: data.provider,
-          providerAccountId: data.providerAccountId,
-        },
+      provider_providerAccountId: {
+        provider: data.provider,
+        providerAccountId: data.providerAccountId,
       },
     },
+    include: { user: true },
   });
+
+  let user = existingAccount?.user || null;
 
   if (!user && data.email) {
     user = await prisma.user.findUnique({ where: { email: data.email } });
@@ -327,31 +353,52 @@ export async function signInProvider(data: SignInProviderData): Promise<OutputAu
         firstName: data.firstName,
         lastName: data.lastName,
         nickName: data.nickName,
-        avatarUrl: data.avatarUrl,
-        emailVerified: data.provider === 'google' ? new Date() : null,
-      },
-    });
-  } else {
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        firstName: data.firstName || user.firstName,
-        lastName: data.lastName || user.lastName,
-        nickName: data.nickName || user.nickName,
-        avatarUrl: data.avatarUrl || user.avatarUrl,
+        emailVerified: new Date(),
       },
     });
   }
 
-  await prisma.user.update({
+  if (!existingAccount) {
+    await prisma.account.create({
+      data: {
+        userId: user.id,
+        type: 'oauth',
+        provider: data.provider,
+        providerAccountId: data.providerAccountId,
+        avatarUrl: data.avatarUrl,
+      },
+    });
+  } else {
+    await prisma.account.update({
+      where: { id: existingAccount.id },
+      data: { avatarUrl: data.avatarUrl },
+    });
+  }
+
+  user = await prisma.user.update({
     where: { id: user.id },
-    data: { lastActiveAt: new Date(), isOnline: true },
+    data: {
+      firstName: user.firstName ?? data.firstName,
+      lastName: user.lastName ?? data.lastName,
+      lastActiveAt: new Date(),
+      isOnline: true,
+    },
   });
 
-  const { accessToken, accessTokenExp, refreshTokenExp } = await generateBackendTokens({
-    sub: user.id,
-    email: user.email || '',
-  });
+  const finalClientId = data.clientId || domain.clientId || 'unknown';
+
+  const { accessToken, accessTokenExp, refreshTokenExp } = await generateBackendTokens(
+    {
+      sub: user.id,
+      email: user.email || '',
+    },
+    {
+      updateAccess: true,
+      updateRefresh: true,
+      clientId: finalClientId,
+      userAgent: domain.userAgent ?? undefined,
+    }
+  );
 
   const sessionToken = crypto.randomUUID();
   const sessionExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -373,7 +420,7 @@ export async function signInProvider(data: SignInProviderData): Promise<OutputAu
       id: user.id,
       email: user.email,
       nickName: user.nickName,
-      avatarUrl: user.avatarUrl,
+      avatarUrl: user.avatarUrl || data.avatarUrl,
     },
   };
 }
@@ -471,26 +518,14 @@ export async function signUp({
   };
 }
 
-export async function signOut(sessionToken: string): Promise<OutputSignOutData> {
-  const session = await prisma.session.findUnique({
-    where: { sessionToken },
-    include: { user: true },
-  });
-
-  if (!session) {
-    return {
-      userId: null,
-      success: true,
-      message: 'Session already terminated',
-      isLogined: false,
-    };
+export async function signOut({ userId, sessionToken }: SignOutData): Promise<OutputSignOutData> {
+  if (sessionToken) {
+    // try {
+    await prisma.session.deleteMany({
+      where: { sessionToken },
+    });
+    // } catch (error) {}
   }
-
-  const userId = session.userId;
-
-  await prisma.session.delete({
-    where: { sessionToken },
-  });
 
   await prisma.token.deleteMany({
     where: {
@@ -534,6 +569,10 @@ export async function receivePasswordResetLink({
       },
     },
   });
+
+  if (user && !user.password) {
+    console.info(`[Auth] OAuth user ${user.email} is setting a password for the first time.`);
+  }
 
   const SUCCESS_MESSAGE =
     'If an account exists for that email, a reset link has been sent. Please check your inbox and spam folder.';
@@ -664,30 +703,22 @@ export async function resetPassword({
   };
 }
 
-export async function updateAccessBackendToken(
-  payload: InputBackendTokens
-): Promise<OutputAccessToken> {
-  const { accessToken, accessTokenExp } = await generateBackendTokens(payload);
+export async function updateAccessBackendToken({
+  payload,
+  domain,
+}: {
+  payload: InputBackendTokens;
+  domain: Domain;
+}): Promise<OutputAccessToken> {
+  const { accessToken, accessTokenExp } = await generateBackendTokens(payload, {
+    updateAccess: true,
+    updateRefresh: false,
+    clientId: domain.clientId ?? 'unknown',
+    userAgent: domain.userAgent ?? undefined,
+  });
 
   return {
     accessToken: accessToken,
     accessTokenExp: accessTokenExp,
-  };
-}
-
-export async function updateRefreshBackendToken(
-  payload: InputBackendTokens
-): Promise<OutputBackendTokens> {
-  const { accessToken, accessTokenExp, refreshToken, refreshTokenExp } =
-    await generateBackendTokens(payload, {
-      updateAccess: true,
-      updateRefresh: true,
-    });
-
-  return {
-    accessToken: accessToken,
-    accessTokenExp: accessTokenExp,
-    refreshToken: refreshToken,
-    refreshTokenExp: refreshTokenExp,
   };
 }

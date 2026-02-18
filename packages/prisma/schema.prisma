@@ -43,11 +43,12 @@ model User {
 }
 
 model Account {
-  id                String @id @default(uuid())
+  id                String  @id @default(uuid())
   userId            String
   type              String // "oauth" | "email" | "credentials"
   provider          String // google" | "facebook" | "github" | "apple"
   providerAccountId String
+  avatarUrl         String?
 
   // OAuth
   refresh_token String?
@@ -102,10 +103,14 @@ enum VerificationType {
 }
 
 model Token {
-  id        String    @id @default(uuid())
-  userId    String
-  type      TokenType
-  token     String    @unique
+  id     String    @id @default(uuid())
+  userId String
+  type   TokenType
+  token  String    @unique
+
+  clientId  String?
+  userAgent String?
+
   expiresAt DateTime
 
   createdAt DateTime @default(now())
@@ -113,7 +118,8 @@ model Token {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, type])
+  @@unique([userId, type, clientId])
+  @@index([userId, type])
   @@map("tokens")
 }
 

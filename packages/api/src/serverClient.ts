@@ -1,7 +1,10 @@
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import { AppRouter } from 'server/src/domain/trpc/trpc.router';
 
-export const getRemoteServerClient = (sessionToken?: string | null) => {
+export const getRemoteServerClient = (
+  sessionToken?: string | null,
+  headers?: Record<string, string | undefined>
+) => {
   return createTRPCProxyClient<AppRouter>({
     links: [
       httpBatchLink({
@@ -9,6 +12,7 @@ export const getRemoteServerClient = (sessionToken?: string | null) => {
         headers() {
           return {
             ...(sessionToken ? { 'x-session-token': sessionToken } : {}),
+            ...headers,
           };
         },
       }),

@@ -1,5 +1,6 @@
 'use client';
 
+import { useConfigStore } from '@package/store/config';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { httpBatchLink, loggerLink } from '@trpc/client';
@@ -11,6 +12,7 @@ import { queryClient } from './query-client';
 
 export function TrpcProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
+  const { ensureClientId } = useConfigStore();
 
   const [client] = useState(() =>
     trpc.createClient({
@@ -19,8 +21,11 @@ export function TrpcProvider({ children }: { children: React.ReactNode }) {
         httpBatchLink({
           url: process.env.NEXT_PUBLIC_SERVER_TRPC_URL as string,
           headers() {
+            const clientId = ensureClientId();
+
             return {
               ...(session?.user ? { 'x-session-token': session?.user?.sessionToken } : {}),
+              'x-client-id': clientId,
             };
           },
           async fetch(url, options) {
