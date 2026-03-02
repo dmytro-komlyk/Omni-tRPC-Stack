@@ -1,5 +1,3 @@
-import * as crypto from 'node:crypto';
-
 import { INestApplicationContext } from '@nestjs/common';
 import { prisma } from '@package/prisma';
 import { inferAsyncReturnType } from '@trpc/server';
@@ -66,12 +64,11 @@ export async function createContext({
   const origin = (headers['origin'] as string) || null;
   const userAgent = (headers['user-agent'] as string) || null;
   const ip = (headers['x-forwarded-for'] as string) || req?.ip || 'unknown';
+  const clientId = (headers['x-client-id'] as string) || null;
 
-  let clientId = (headers['x-client-id'] as string) || null;
-
-  if (!clientId && userAgent) {
-    clientId = crypto.createHash('md5').update(`${userAgent}-${ip}`).digest('hex');
-  }
+  // if (!clientId && userAgent) {
+  //   clientId = crypto.createHash('md5').update(`${userAgent}-${ip}`).digest('hex');
+  // }
 
   const cleanHost = host?.split(':')[0] || null;
 
@@ -104,10 +101,16 @@ export async function createContext({
       });
 
       if (dbSession && dbSession.expiresAt > new Date()) {
-        const newExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        user = dbSession.user;
+
         await prisma.session.update({
           where: { sessionToken },
-          data: { expiresAt: newExpires },
+          data: {
+            lastActiveAt: new Date(),
+            clientId: dbSession.clientId || clientId,
+            userAgent: dbSession.userAgent || userAgent,
+            ipAddress: ip,
+          },
         });
 
         await prisma.user.update({
@@ -118,7 +121,6 @@ export async function createContext({
           },
         });
 
-        user = dbSession.user;
         logger.log({ userId: dbSession.userId }, 'Session confirmed');
       } else {
         logger.warn('Session not found or expired');

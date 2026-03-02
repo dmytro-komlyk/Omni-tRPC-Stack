@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const providerType = z.enum(['google', 'facebook']);
+export type ProviderType = z.infer<typeof providerType>;
+
 export const tokenType = z.enum(['access', 'refresh', 'reset']);
 export type TokenJWT = z.infer<typeof tokenType>;
 
@@ -42,6 +45,24 @@ export const signInProviderSchema = z.object({
 
 export type SignInProviderData = z.infer<typeof signInProviderSchema>;
 
+export const signInMobileProviderSchema = z.object({
+  token: z.string(),
+  provider: providerType,
+});
+
+export type SignInMobileProviderData = z.infer<typeof signInMobileProviderSchema>;
+
+export const outputVerifyOuthToken = z.object({
+  email: z.string().email().min(1).nullable(),
+  providerAccountId: z.string().min(1),
+  firstName: z.string().min(1).nullable(),
+  lastName: z.string().min(1).nullable(),
+  nickName: z.string().min(1).nullable(),
+  avatarUrl: z.string().url().nullable(),
+});
+
+export type OutputVerifyOuthTokenData = z.infer<typeof outputVerifyOuthToken>;
+
 export const signUpSchema = z.object({
   email: z.string().email().min(1),
   password: z.string().min(6),
@@ -79,6 +100,7 @@ export type SignUpResponseData = z.infer<typeof signUpResponseSchema>;
 
 export const signOutSchema = z.object({
   userId: z.string(),
+  clientId: z.string().nullable(),
   sessionToken: z.string().nullable(),
 });
 

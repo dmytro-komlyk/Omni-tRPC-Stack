@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 import { prisma } from '@package/prisma';
 import { TRPCError } from '@trpc/server';
 import { compare, hash } from 'bcryptjs';
@@ -77,7 +79,7 @@ export async function signIn({
       },
     });
 
-    const link = `${domain.origin}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
+    const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
 
     await sendEmail({
       email: data.email,
@@ -164,18 +166,18 @@ export async function signIn({
       }
     );
 
-  const sessionToken = crypto.randomUUID();
-  const sessionExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const sessionToken = isWeb ? crypto.randomUUID() : refreshToken;
+  const sessionExpires = isWeb ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : refreshTokenExp;
 
-  if (isWeb) {
-    await prisma.session.create({
-      data: {
-        sessionToken,
-        userId: user.id,
-        expiresAt: sessionExpires,
-      },
-    });
-  }
+  await prisma.session.create({
+    data: {
+      sessionToken,
+      userId: user.id,
+      expiresAt: sessionExpires,
+      clientId: domain.clientId,
+      userAgent: domain.userAgent,
+    },
+  });
 
   return {
     accessToken,
@@ -308,7 +310,7 @@ export async function resendVerification({
     },
   });
 
-  const link = `${domain.origin}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
+  const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
 
   await sendEmail({
     email: data.email,
@@ -385,34 +387,39 @@ export async function signInProvider({
     },
   });
 
+  const isWeb = !!domain.origin;
   const finalClientId = data.clientId || domain.clientId || 'unknown';
 
-  const { accessToken, accessTokenExp, refreshTokenExp } = await generateBackendTokens(
-    {
-      sub: user.id,
-      email: user.email || '',
-    },
-    {
-      updateAccess: true,
-      updateRefresh: true,
-      clientId: finalClientId,
-      userAgent: domain.userAgent ?? undefined,
-    }
-  );
+  const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+    await generateBackendTokens(
+      {
+        sub: user.id,
+        email: user.email || '',
+      },
+      {
+        updateAccess: true,
+        updateRefresh: true,
+        clientId: finalClientId,
+        userAgent: domain.userAgent ?? undefined,
+      }
+    );
 
-  const sessionToken = crypto.randomUUID();
-  const sessionExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const sessionToken = isWeb ? crypto.randomUUID() : refreshToken;
+  const sessionExpires = isWeb ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : refreshTokenExp;
 
   await prisma.session.create({
     data: {
       sessionToken,
       userId: user.id,
       expiresAt: sessionExpires,
+      clientId: finalClientId,
+      userAgent: domain.userAgent,
     },
   });
 
   return {
     accessToken,
+    refreshToken,
     accessTokenExp,
     refreshTokenExp,
     sessionToken,
@@ -463,7 +470,7 @@ export async function signUp({
       },
     });
 
-    const link = `${domain.origin}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
+    const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
 
     await sendEmail({
       email: data.email,
@@ -502,7 +509,7 @@ export async function signUp({
     },
   });
 
-  const link = `${domain.origin}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
+  const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
 
   await sendEmail({
     email: data.email,
@@ -518,28 +525,40 @@ export async function signUp({
   };
 }
 
-export async function signOut({ userId, sessionToken }: SignOutData): Promise<OutputSignOutData> {
+export async function signOut({
+  userId,
+  clientId,
+  sessionToken,
+}: SignOutData): Promise<OutputSignOutData> {
   if (sessionToken) {
-    // try {
     await prisma.session.deleteMany({
       where: { sessionToken },
     });
-    // } catch (error) {}
   }
 
-  await prisma.token.deleteMany({
+  if (clientId) {
+    await prisma.token.deleteMany({
+      where: {
+        userId,
+        clientId,
+        type: {
+          in: ['ACCESS', 'REFRESH'],
+        },
+      },
+    });
+  }
+
+  const activeSessionsCount = await prisma.session.count({
     where: {
       userId,
-      type: {
-        in: ['ACCESS', 'REFRESH'],
-      },
+      expiresAt: { gt: new Date() },
     },
   });
 
   await prisma.user.update({
     where: { id: userId },
     data: {
-      isOnline: false,
+      isOnline: activeSessionsCount > 0,
       lastActiveAt: new Date(),
     },
   });
@@ -622,7 +641,7 @@ export async function receivePasswordResetLink({
     },
   });
 
-  const link = `${domain.origin}/auth/reset-password?token=${token}&email=${encodeURIComponent(data.email)}`;
+  const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/reset-password?token=${token}&email=${encodeURIComponent(data.email)}`;
 
   await sendEmail({
     email: data.email,

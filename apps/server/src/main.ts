@@ -158,6 +158,21 @@ async function bootstrap() {
 
     logger.log(`Static assets served from "${staticPath}" at prefix "${staticPrefix}"`);
 
+    app.useStaticAssets({
+      root: `${staticPath}/.well-known`,
+      prefix: '/.well-known/',
+      decorateReply: false,
+      wildcard: true,
+      dotfiles: 'allow',
+      setHeaders: (res, path) => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        if (path.endsWith('apple-app-site-association')) {
+          res.setHeader('Content-Type', 'application/json');
+        }
+      },
+    });
+    logger.log(`Deep Linking verification files served at "/.well-known/"`);
+
     await app.listen(port, '0.0.0.0');
     logger.log(`Fastify Server is running on port ${port}`);
 

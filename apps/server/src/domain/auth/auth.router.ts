@@ -15,10 +15,12 @@ import {
   outputCheckAuthSchema,
   OutputSignOutData,
   outputSignOutSchema,
+  OutputVerifyOuthTokenData,
   resendVerificationEmailSchema,
   ResetPasswordOutputData,
   resetPasswordOutputSchema,
   resetPasswordSchema,
+  signInMobileProviderSchema,
   signInProviderSchema,
   signInSchema,
   SignUpResponseData,
@@ -40,6 +42,7 @@ import {
   verifyEmail,
 } from './auth.service';
 import { verifyToken } from './jwt.service';
+import { verifyFacebookMobileToken, verifyGoogleMobileToken } from './oauth.service';
 
 export const authRouter = router({
   login: procedure
@@ -61,16 +64,6 @@ export const authRouter = router({
       return response;
     }),
   loginProvider: procedure
-    .meta({
-      openapi: {
-        enabled: true,
-        method: 'POST',
-        path: '/auth.loginProvider',
-        summary: 'Login the user via provider',
-        tags: ['auth'],
-        protect: false,
-      },
-    })
     .input(signInProviderSchema)
     .output(outputAuthProviderSchema)
     .mutation(async ({ input, ctx }) => {
@@ -78,6 +71,34 @@ export const authRouter = router({
       ctx.logger.log(
         { userId: response.user.id, path: 'auth.loginProvider' },
         'Login provider successfully'
+      );
+      return response;
+    }),
+  loginMobileProvider: procedure
+    .input(signInMobileProviderSchema)
+    .output(outputAuthProviderSchema)
+    .mutation(async ({ input, ctx }) => {
+      let oauthData: OutputVerifyOuthTokenData;
+
+      if (input.provider === 'google') {
+        oauthData = await verifyGoogleMobileToken(input.token);
+      } else if (input.provider === 'facebook') {
+        oauthData = await verifyFacebookMobileToken(input.token);
+      } else {
+        throw new Error('Unsupported provider');
+      }
+
+      const response = await signInProvider({
+        data: {
+          ...oauthData,
+          provider: input.provider,
+        },
+        domain: ctx.domain,
+      });
+
+      ctx.logger.log(
+        { userId: response.user.id, path: 'auth.loginMobileProvider' },
+        'Login mobile provider successfully'
       );
       return response;
     }),
@@ -96,6 +117,7 @@ export const authRouter = router({
     .mutation(async ({ ctx }) => {
       const response: OutputSignOutData = await signOut({
         userId: ctx.user.id,
+        clientId: ctx.domain.clientId,
         sessionToken: ctx.sessionToken,
       });
       ctx.logger.log({ userId: response.userId, path: 'auth.logout' }, response.message);
