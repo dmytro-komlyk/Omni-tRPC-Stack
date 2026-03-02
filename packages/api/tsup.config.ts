@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     'src/index.ts',
     'src/client.ts',
+    'src/schema.ts',
     'src/Provider.tsx',
     'src/ProviderNative.tsx',
     'src/serverClient.ts',

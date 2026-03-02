@@ -1,24 +1,32 @@
 'use client';
 
-import { getAccessToken } from '@package/store/expo';
+import { useAuthStore } from '@package/store/auth-native';
+import { useConfigStore } from '@package/store/config-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink, loggerLink } from '@trpc/client';
+import * as Device from 'expo-device';
 import { useState } from 'react';
 
 import { trpc } from './client';
-import { queryClientNative } from './query-client';
+import { queryClient } from './query-client-native';
 
 export function TrpcNativeProvider({ children }: { children: React.ReactNode }) {
   const [client] = useState(() =>
     trpc.createClient({
       links: [
-        loggerLink({ enabled: () => process.env.NODE_ENV === 'development' }),
+        loggerLink({ enabled: () => __DEV__ }),
         httpBatchLink({
           url: process.env.EXPO_PUBLIC_HTTP_URL as string,
-          async headers() {
-            const token = await getAccessToken();
-            console.log('expo secure token', token);
-            return token ? { Authorization: `Bearer ${token}` } : {};
+          headers() {
+            const { accessToken, sessionToken } = useAuthStore.getState();
+            const clientId = useConfigStore.getState().ensureClientId();
+
+            return {
+              'x-client-id': clientId,
+              'user-agent': `${Device.osName} ${Device.osVersion}`,
+              ...(sessionToken ? { 'x-session-token': sessionToken } : {}),
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            };
           },
         }),
       ],
@@ -26,8 +34,8 @@ export function TrpcNativeProvider({ children }: { children: React.ReactNode }) 
   );
 
   return (
-    <trpc.Provider client={client} queryClient={queryClientNative}>
-      <QueryClientProvider client={queryClientNative}>{children}</QueryClientProvider>
+    <trpc.Provider client={client} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </trpc.Provider>
   );
 }

@@ -18,6 +18,10 @@
       "types": "./dist/serverClient.d.ts",
       "import": "./dist/serverClient.js"
     },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
     "./provider": {
       "types": "./dist/Provider.d.ts",
       "import": "./dist/Provider.js"
@@ -50,6 +54,7 @@
     "axios-retry": "^4.5.0",
     "cron-validator": "^1.3.1",
     "expo-constants": "~18.0.12",
+    "expo-device": "^8.0.10",
     "next-auth": "^5.0.0-beta.25",
     "qs": "^6.14.0",
     "react-dom": "^19.1.0",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useConfigStore } from '@package/store/config';
+import { useConfigStore } from '@package/store/config-web';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { httpBatchLink, loggerLink } from '@trpc/client';
@@ -35,7 +35,7 @@ export function TrpcProvider({ children }: { children: React.ReactNode }) {
               signal: options?.signal ?? null,
             });
             if (response.status === 401 && typeof window !== 'undefined') {
-              // Можно добавить логику signOut() из next-auth/react здесь
+              // can be signOut() from next-auth/react
             }
             return response;
           },
