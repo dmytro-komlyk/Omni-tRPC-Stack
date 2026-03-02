@@ -1,47 +1,27 @@
-import * as storage from '@package/store/expo';
-import { router } from 'expo-router';
-import { createContext, useContext, useEffect, useState } from 'react';
+'use client';
 
-type AuthContextType = {
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (access: string, refresh: string) => Promise<void>;
-  logout: () => Promise<void>;
-};
+import { useAuthStore } from '@package/store/auth-native';
+import { createContext, useContext, useEffect } from 'react';
 
-const AuthContext = createContext<AuthContextType>({} as any);
+type AuthContextType = ReturnType<typeof useAuthStore>;
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const store = useAuthStore();
+  console.log('AuthProvider - isAuthenticated:', store.isAuthenticated);
 
   useEffect(() => {
-    checkLogin();
+    store.checkAuth();
   }, []);
 
-  const checkLogin = async () => {
-    const token = await storage.isLoggedIn();
-    setIsAuthenticated(token);
-    setIsLoading(false);
-  };
-
-  const login = async (access: string, refresh: string) => {
-    await storage.saveTokens(access, refresh);
-    setIsAuthenticated(true);
-    router.replace('/');
-  };
-
-  const logout = async () => {
-    await storage.deleteTokens();
-    setIsAuthenticated(false);
-    router.replace('/sign-in');
-  };
-
-  return (
-    <AuthContext.Provider value={{ isLoading, isAuthenticated, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={store}>{children}</AuthContext.Provider>;
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+}
