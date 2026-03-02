@@ -54,7 +54,7 @@
     "build": {
       "dependsOn": ["db:generate", "^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", ".expo/**"],
-      "env": ["APP_DOMAIN", "APP_HTTP_URL", "DATABASE_URL"]
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
     },
     "build:types": {
       "dependsOn": ["db:generate", "^build:types"],
@@ -74,7 +74,19 @@
       "cache": false,
       "persistent": true,
       "interactive": true,
-      "env": ["APP_DOMAIN", "APP_HTTP_URL", "DATABASE_URL"]
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
+    },
+    "ios": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true,
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
+    },
+    "android": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true,
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
     },
     "lint": {
       "cache": false,
@@ -91,7 +103,7 @@
     "start": {
       "cache": false,
       "persistent": true,
-      "env": ["APP_DOMAIN", "APP_HTTP_URL", "DATABASE_URL"]
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
     },
     "expo:export": {
       "dependsOn": ["^build"],
