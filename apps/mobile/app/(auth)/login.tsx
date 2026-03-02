@@ -99,7 +99,10 @@ export default function Login() {
           {errors.password?.message}
         </HelperText>
       </View>
-      <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')} className="mb-6">
+      <TouchableOpacity
+        onPress={() => router.push('/(auth)/forgot-password')}
+        className="mb-6 self-end"
+      >
         <Text className="text-primary font-medium ml-1">Forgot Password?</Text>
       </TouchableOpacity>
       <Button
@@ -109,12 +112,12 @@ export default function Login() {
         disabled={loginMutation.isPending}
         className="rounded-full py-2"
       >
-        Login
+        Sign in
       </Button>
 
       <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
         <Text className="text-center text-primary mt-4">
-          Don't have an account? <Text className="font-bold">Sign up</Text>
+          Not registered yet? <Text className="font-bold">Create an account</Text>
         </Text>
       </TouchableOpacity>
 
@@ -124,7 +127,7 @@ export default function Login() {
         <View className="flex-1 h-[1px] bg-gray-300" />
       </View>
 
-      <View className="flex-col gap-3">
+      <View className="flex-col gap-6">
         <Button
           mode="outlined"
           icon="google"
