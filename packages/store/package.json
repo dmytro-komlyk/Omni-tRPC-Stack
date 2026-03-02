@@ -10,20 +10,30 @@
       "types": "./dist/secure.store.d.ts",
       "import": "./dist/secure.store.mjs"
     },
-    "./auth": {
-      "require": "./dist/auth.store.js",
-      "types": "./dist/auth.store.d.ts",
-      "import": "./dist/auth.store.mjs"
+    "./auth-web": {
+      "require": "./dist/auth-web.store.js",
+      "types": "./dist/auth-web.store.d.ts",
+      "import": "./dist/auth-web.store.mjs"
+    },
+    "./auth-native": {
+      "require": "./dist/auth-native.store.js",
+      "types": "./dist/auth-native.store.d.ts",
+      "import": "./dist/auth-native.store.mjs"
     },
     "./ui": {
       "require": "./dist/ui.store.js",
       "types": "./dist/ui.store.d.ts",
       "import": "./dist/ui.store.mjs"
     },
-    "./config": {
-      "require": "./dist/config.store.js",
-      "types": "./dist/config.store.d.ts",
-      "import": "./dist/config.store.mjs"
+    "./config-web": {
+      "require": "./dist/config-web.store.js",
+      "types": "./dist/config-web.store.d.ts",
+      "import": "./dist/config-web.store.mjs"
+    },
+    "./config-native": {
+      "require": "./dist/config-native.store.js",
+      "types": "./dist/config-native.store.d.ts",
+      "import": "./dist/config-native.store.mjs"
     }
   },
   "scripts": {
@@ -37,6 +47,8 @@
     "clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "expo-crypto": "^15.0.8",
     "expo-secure-store": "~15.0.8",
     "js-cookie": "^3.0.5",
     "zustand": "^5.0.3"

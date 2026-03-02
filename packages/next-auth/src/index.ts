@@ -28,13 +28,20 @@ export const authOptions: AuthConfig = {
   secret: process.env.AUTH_SECRET as string,
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: process.env.AUTH_GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET as string,
+      // authorization: {
+      //   params: {
+      //     prompt: 'select_account',
+      //     access_type: 'offline',
+      //     response_type: 'code',
+      //   },
+      // },
       allowDangerousEmailAccountLinking: true,
     }),
     FacebookProvider({
-      clientId: process.env.FACEBOOK_CLIENT_ID as string,
-      clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
+      clientId: process.env.AUTH_FACEBOOK_ID as string,
+      clientSecret: process.env.AUTH_FACEBOOK_SECRET as string,
     }),
     AppleProvider({
       clientId: process.env.APPLE_ID as string,

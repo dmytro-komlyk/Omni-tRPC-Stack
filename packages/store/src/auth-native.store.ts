@@ -1,8 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-import { deleteTokens, getAccessToken, getRefreshToken, saveTokens } from './secure.store';
+import { persist, PersistStorage, StorageValue } from 'zustand/middleware';
 
 interface User {
   id: string;
@@ -15,47 +13,64 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  sessionToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isHydrated: boolean;
   error: string | null;
-
+  setHasHydrated: (state: boolean) => void;
   login: ({
     user,
     access,
     refresh,
+    session,
   }: {
     user: User;
     access: string;
     refresh: string;
+    session: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
-const secureStorage = {
-  getItem: async (name: string) => SecureStore.getItemAsync(name),
-  setItem: async (name: string, value: string) => SecureStore.setItemAsync(name, value),
-  removeItem: async (name: string) => SecureStore.deleteItemAsync(name),
+const secureStorage: PersistStorage<AuthState> = {
+  getItem: async (name: string): Promise<StorageValue<AuthState> | null> => {
+    const data = await SecureStore.getItemAsync(name);
+    if (!data) return null;
+    return JSON.parse(data);
+  },
+  setItem: async (name: string, value: StorageValue<AuthState>): Promise<void> => {
+    await SecureStore.setItemAsync(name, JSON.stringify(value));
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await SecureStore.deleteItemAsync(name);
+  },
 };
 
 export const useAuthStore = create<AuthState>()(
   persist<AuthState>(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
+      sessionToken: null,
       isAuthenticated: false,
-      isLoading: true,
+      isLoading: false,
+      isHydrated: false,
       error: null,
 
-      login: async ({ user, access, refresh }) => {
+      setHasHydrated: (state) => set({ isHydrated: state }),
+
+      login: async ({ user, access, refresh, session }) => {
         try {
           set({ isLoading: true, error: null });
-          await saveTokens(access, refresh);
+
           set({
             user,
             accessToken: access,
             refreshToken: refresh,
+            sessionToken: session,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -67,11 +82,12 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           set({ isLoading: true, error: null });
-          await deleteTokens();
+
           set({
             user: null,
             accessToken: null,
             refreshToken: null,
+            sessionToken: null,
             isAuthenticated: false,
             isLoading: false,
             error: null,
@@ -83,18 +99,14 @@ export const useAuthStore = create<AuthState>()(
       checkAuth: async () => {
         try {
           set({ isLoading: true, error: null });
-          const accessToken = await getAccessToken();
-          const refreshToken = await getRefreshToken();
-
-          if (accessToken) {
+          const { accessToken, sessionToken } = get();
+          if (accessToken && sessionToken) {
             set({
-              accessToken,
-              refreshToken: refreshToken || null,
               isAuthenticated: true,
               isLoading: false,
             });
           } else {
-            set({ isLoading: false });
+            set({ isLoading: false, isAuthenticated: false });
           }
         } catch (err) {
           set({ error: (err as Error).message, isLoading: false });
@@ -103,34 +115,19 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-expo',
-      storage: {
-        getItem: async (name) => {
-          const value = await secureStorage.getItem(name);
-          return value ? JSON.parse(value) : null;
-        },
-        setItem: async (name, value) => {
-          await secureStorage.setItem(name, JSON.stringify(value));
-        },
-        removeItem: async (name) => {
-          await secureStorage.removeItem(name);
-        },
-      },
+      storage: secureStorage,
       partialize: (state) =>
         ({
           user: state.user,
           accessToken: state.accessToken,
           refreshToken: state.refreshToken,
+          sessionToken: state.sessionToken,
           isAuthenticated: state.isAuthenticated,
         }) as AuthState,
-      onRehydrateStorage: () => {
-        return (state, error) => {
-          if (error) {
-            console.error('Rehydration error:', error);
-          }
-          if (state) {
-            state.isLoading = false;
-          }
-        };
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.setHasHydrated(true);
+        }
       },
     }
   )
