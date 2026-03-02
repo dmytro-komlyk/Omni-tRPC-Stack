@@ -32,7 +32,8 @@
     ".next/types/**/*.ts",
     "tailwind.config.ts",
     "next.config.ts",
-    "src/**/*"
+    "src/**/*",
+    "../../types/**/*"
   ],
   "exclude": ["node_modules", ".next", "out", "dist"]
 }

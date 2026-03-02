@@ -3,7 +3,7 @@ import sharedConfig from '@package/tailwindcss-config';
 import scrollbar from 'tailwind-scrollbar';
 import type { Config } from 'tailwindcss';
 
-const config = {
+const config: Config = {
   presets: [sharedConfig as Config],
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
