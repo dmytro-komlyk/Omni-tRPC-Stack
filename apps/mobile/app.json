@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Boilerplate Mobile",
+    "name": "boilerplate",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["com.boilerplate.app", "fb1261275725951282"],
+    "scheme": ["com.boilerplate.app"],
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
