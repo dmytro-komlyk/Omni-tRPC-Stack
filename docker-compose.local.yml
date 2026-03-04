@@ -1,58 +1,28 @@
 version: '3.8'
-services:
-  mongo:
-    build:
-      target: mongo
-      dockerfile: ./apps/database/Dockerfile
-      args:
-        MONGO_VERSION: 6
-    container_name: mongo
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME= #USERNAME
-      - MONGO_INITDB_ROOT_PASSWORD= #PASSWORD
-      - MONGO_INITDB_DATABASE= #DATABASE
-      - MONGO_REPLICA_HOST=mongo
-      - MONGO_REPLICA_PORT=27018
-      - MONGO_COMMAND=mongosh
-      - INIT_REPL_CMD=3
-    volumes:
-      - ./apps/database/data:/data/db
-      - ./apps/database/conf/mongod.conf.orig:/etc/mongod.conf
-    ports:
-      - 27018:27018
-    networks:
-      - backend
-    restart: always
-    healthcheck:
-      # Use "mongo" instead of "mongosh" before v5.0
-      test:
-        [
-          'CMD',
-          'mongosh',
-          'admin',
-          '--port',
-          '27018',
-          '--eval',
-          "db.adminCommand('ping').ok",
-        ]
-      interval: 5s
-      timeout: 30s
-      start_period: 0s
-      retries: 30
 
-  mongo-seed:
-    build:
-      context: .
-      target: mongo-seed
-      dockerfile: ./apps/database/Dockerfile
-      args:
-        MONGO_VERSION: 6
-        SERVICE_PATH: apps/database
-    container_name: mongo-seed
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_HOST: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - backend
-    depends_on:
-      - mongo
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   server:
     build:
@@ -63,45 +33,52 @@ services:
         BUILD_MODE: local
     container_name: server
     restart: unless-stopped
-    env_file: ./apps/server/.env.docker.local
+    env_file:
+      - .env
+      - ./apps/server/.env
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public
     volumes:
-      - ./apps/server/public:/app/apps/server/public
       - /app/node_modules
       - /app/apps/server/node_modules
-      - shared-prisma:/app/apps/server/prisma
     ports:
-      - 3000:3000
+      - '3000:3000'
     networks:
       - backend
     depends_on:
-      - mongo
+      postgres:
+        condition: service_healthy
     links:
-      - mongo
+      - postgres
 
-  prisma-studio:
+  website:
     build:
       context: .
-      target: prisma-runner
-      dockerfile: ./apps/server/Dockerfile
-    container_name: prisma-studio
+      target: runner
+      dockerfile: ./apps/website/Dockerfile
+      args:
+        BUILD_MODE: local
+        APP_PORT: 3001
+        APP_HOSTNAME: 'boilerplate.localhost'
+        NEXT_PUBLIC_APP_DOMAIN: 'boilerplate.localhost:3001'
+        NEXT_PUBLIC_ADMIN_DOMAIN: 'admin.boilerplate.localhost:3002'
+        NEXT_PUBLIC_SERVER_DOMAIN: 'server.boilerplate.localhost:3000'
+    container_name: website
     restart: unless-stopped
-    env_file: ./apps/server/.env.docker.local
+    env_file:
+      - .env
+      - ./apps/website/.env.local
     environment:
       - NODE_ENV=production
-    volumes:
-      - /app/node_modules
-      - /app/apps/server/node_modules
-      - shared-prisma:/app/apps/server/prisma
+      - APP_HTTP_URL=http://server:3000/trpc
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public
     ports:
-      - 5555:5555
+      - '3001:3001'
     networks:
       - backend
     depends_on:
-      - mongo
-    links:
-      - mongo
+      - server
 
   admin:
     build:
@@ -109,57 +86,31 @@ services:
       target: runner
       dockerfile: ./apps/admin/Dockerfile
       args:
-        DATABASE_URL: #Add URL
         BUILD_MODE: local
+        APP_PORT: 3002
+        APP_HOSTNAME: 'admin.boilerplate.localhost'
+        NEXT_PUBLIC_APP_DOMAIN: 'admin.boilerplate.localhost:3002'
+        NEXT_PUBLIC_WEBSITE_DOMAIN: 'boilerplate.localhost:3001'
+        NEXT_PUBLIC_SERVER_DOMAIN: 'server.boilerplate.localhost:3000'
     container_name: admin
     restart: unless-stopped
-    stdin_open: true
-    tty: true
-    env_file: ./apps/admin/.env.docker.local
+    env_file:
+      - .env
+      - ./apps/admin/.env.local
     environment:
       - NODE_ENV=production
-    volumes:
-      - ./apps/admin/public:/app/apps/admin/public
-      - /app/node_modules
-      - /app/apps/admin/node_modules
+      - APP_HTTP_URL=http://server:3000/trpc
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public
     ports:
-      - 3002:3002
+      - '3002:3002'
     networks:
-      - client
       - backend
-
-  client:
-    build:
-      context: .
-      target: runner
-      dockerfile: ./apps/client/Dockerfile
-      args:
-        DATABASE_URL: #Add URL
-        BUILD_MODE: local
-    container_name: client
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    env_file: ./apps/client/.env.docker.local
-    environment:
-      - NODE_ENV=production
-    volumes:
-      - ./apps/client/public:/app/apps/client/public
-      - /app/node_modules
-      - /app/apps/client/node_modules
-    ports:
-      - 3001:3001
-    networks:
-      - client
-      - backend
+    depends_on:
+      - server
 
 networks:
-  client:
-    driver: bridge
   backend:
     driver: bridge
 
 volumes:
-  database:
-    driver: local
-  shared-prisma:
+  postgres_data:

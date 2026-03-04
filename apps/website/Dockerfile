@@ -1,94 +1,78 @@
-ARG NODE_VERSION=18
+# 1. Base image with Node.js and necessary tools
+ARG NODE_VERSION=22.13.1
+FROM node:${NODE_VERSION}-alpine AS base
+RUN apk update && apk add --no-cache libc6-compat
 
-FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine3.17 AS alpine
-RUN apk update
-RUN apk add --no-cache libc6-compat
+RUN npm install -g pnpm turbo
 
-FROM alpine as base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-RUN pnpm install turbo --global
-RUN pnpm config set store-dir ~/.pnpm-store
-
-# Prune project
+# 2. Prune the monorepo to only include the necessary files for the website app
 FROM base AS pruner
-ARG APP_NAME=client
-
 WORKDIR /app
 COPY . .
-RUN turbo prune --scope=${APP_NAME} --docker
+RUN turbo prune --scope=website --docker
 
-# Build the project
+# 3. Build the project
 FROM base AS builder
-ARG APP_NAME=client
+ARG BUILD_MODE=production
+ARG APP_HOSTNAME
+ARG NEXT_PUBLIC_APP_DOMAIN
+ARG NEXT_PUBLIC_ADMIN_DOMAIN
+ARG NEXT_PUBLIC_SERVER_DOMAIN
 
 WORKDIR /app
 
-# Copy lockfile and package.json's of isolated subworkspace
-COPY .gitignore .gitignore
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/tsconfig.json ./tsconfig.json
 
-# First install the dependencies (as they change less often)
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
-ARG BUILD_MODE=local
-ARG NEXT_PUBLIC_APP_DOMAIN
-ARG NEXT_PUBLIC_SERVER_DOMAIN
-
+ENV APP_HOSTNAME=$APP_HOSTNAME
 ENV NEXT_PUBLIC_APP_DOMAIN=$NEXT_PUBLIC_APP_DOMAIN
+ENV NEXT_PUBLIC_ADMIN_DOMAIN=$NEXT_PUBLIC_ADMIN_DOMAIN
 ENV NEXT_PUBLIC_SERVER_DOMAIN=$NEXT_PUBLIC_SERVER_DOMAIN
-ENV NEXT_TELEMETRY_DISABLED 1
 
-COPY apps/${APP_NAME}/.env.docker.${BUILD_MODE}.example ./apps/${APP_NAME}/.env.local
-# Copy source code of isolated subworkspace
+COPY .env.example ./.env
+COPY apps/website/.env.${BUILD_MODE}.example ./apps/website/.env
+
 COPY --from=pruner /app/out/full/ .
+COPY --from=pruner /app/types ./types
 COPY turbo.json turbo.json
+COPY .gitignore .gitignore
 
 RUN pnpm db:generate
-RUN turbo build --filter=${APP_NAME}
+RUN turbo build --filter=website
 
-#
-COPY apps/${APP_NAME}/start.sh ./apps/${APP_NAME}/start.sh
-RUN chmod +x /app/apps/${APP_NAME}/start.sh
-
-# Final image
-FROM alpine AS runner
-ARG APP_NAME=client
+# 4. Runner stage to create a minimal image for running the built application
+FROM base AS runner
 
 WORKDIR /app
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
 USER nextjs
 
-COPY --from=builder /app/apps/${APP_NAME}/next.config.js ./apps/${APP_NAME}/next.config.js
-COPY --from=builder /app/apps/${APP_NAME}/package.json ./apps/${APP_NAME}/package.json
- 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/.next/static ./apps/${APP_NAME}/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/public ./apps/${APP_NAME}/public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/start.sh ./apps/${APP_NAME}/start.sh
-COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/.env.local ./apps/${APP_NAME}/.env.local
+COPY --from=builder /app/apps/website/next.config.ts ./apps/website/next.config.ts
+COPY --from=builder /app/apps/website/package.json ./apps/website/package.json
 
-WORKDIR /app/apps/${APP_NAME}
+COPY --from=builder --chown=nextjs:nodejs /app/apps/website/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/website/.next/static ./apps/website/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/website/public ./apps/website/public
+COPY --from=builder --chown=nextjs:nodejs /app/.env ./.env  
+COPY --from=builder --chown=nextjs:nodejs /app/apps/website/.env ./apps/website/.env
 
-ARG DATABASE_URL
+WORKDIR /app/apps/website
 
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-ENV DATABASE_URL=${DATABASE_URL}
 
 USER nextjs
 
-ARG PORT=3001
-ENV PORT=${PORT}
-ENV HOSTNAME 0.0.0.0
-EXPOSE ${PORT}
+ARG APP_PORT
+ENV PORT=${APP_PORT}
+ENV HOSTNAME=0.0.0.0
+EXPOSE ${APP_PORT}
 
-CMD ["./start.sh"]
+CMD ["node", "server.js"]

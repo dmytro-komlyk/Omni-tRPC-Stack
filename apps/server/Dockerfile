@@ -1,84 +1,69 @@
-ARG NODE_VERSION=18
+# 1. Use an official Node.js image as the base image
+ARG NODE_VERSION=22.13.1
+FROM node:${NODE_VERSION}-bookworm-slim AS base
 
-FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine3.17 AS alpine
-RUN apk update
-RUN apk add --no-cache libc6-compat
+RUN apt-get update && apt-get install -y \
+    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
+    libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 \
+    fonts-liberation ca-certificates \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+    
+RUN npm install -g pnpm turbo
 
-FROM alpine as base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-RUN pnpm install turbo --global
-RUN pnpm config set store-dir ~/.pnpm-store
-
-# Prune project
+# 2. Prune the monorepo to only include the necessary files for the server app
 FROM base AS pruner
-ARG APP_NAME=server
-
 WORKDIR /app
 COPY . .
-RUN turbo prune --scope=${APP_NAME} --docker
+RUN turbo prune --scope=server --docker
 
-# Build the project
+# 3. Builder stage to install dependencies and build the application
 FROM base AS builder
-ARG APP_NAME=server
+ARG BUILD_MODE=local
+ARG APP_DOMAIN
+ARG APP_WEBSITE_DOMAIN
+ARG APP_ADMIN_DOMAIN
 
 WORKDIR /app
 
-# Copy lockfile and package.json's of isolated subworkspace
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/tsconfig.json ./tsconfig.json
 
-# First install the dependencies (as they change less often)
-RUN --mount=type=cache,id=pnpm,target=~/.pnpm-store pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
-# Copy source code of isolated subworkspace
+ENV APP_DOMAIN=$APP_DOMAIN
+ENV APP_WEBSITE_DOMAIN=$APP_WEBSITE_DOMAIN
+ENV APP_ADMIN_DOMAIN=$APP_ADMIN_DOMAIN
+
+COPY .env.example ./.env
+COPY apps/server/.env.${BUILD_MODE}.example ./apps/server/.env
+
 COPY --from=pruner /app/out/full/ .
 COPY turbo.json turbo.json
-
 COPY .gitignore .gitignore
+
 RUN pnpm db:generate
-RUN turbo build --filter=${APP_NAME}
+RUN turbo build --filter=server
 
-#
-COPY apps/${APP_NAME}/migrate-and-start.sh ./apps/${APP_NAME}/migrate-and-start.sh
-RUN chmod +x /app/apps/${APP_NAME}/migrate-and-start.sh
-
-RUN --mount=type=cache,id=pnpm,target=~/.pnpm-store pnpm prune --prod --no-optional
-RUN rm -rf ./**/*/src
-
-# Final image
-FROM alpine AS runner
-ARG APP_NAME=server
+# 4. Final stage to create a minimal image for running the server application
+FROM base AS runner
 
 USER node
 
 WORKDIR /app
 COPY --from=builder --chown=node:node /app .
 
-WORKDIR /app/apps/${APP_NAME}
+WORKDIR /app/packages/prisma
 
-ARG PORT=3000
+WORKDIR /app/apps/server
+
+ARG APP_PORT=3000
 ENV NODE_ENV=production
-ENV PORT=${PORT}
-ENV HOSTNAME 0.0.0.0
-EXPOSE ${PORT}
+ENV PORT=${APP_PORT}
+ENV HOSTNAME=0.0.0.0
+EXPOSE ${APP_PORT}
 
-CMD ["./migrate-and-start.sh"]
-
-FROM base as prisma-runner
-ARG APP_NAME=server
-COPY --chown=node:node --from=runner /app/package.json /app/package.json
-COPY --chown=node:node --from=runner /app/apps/${APP_NAME}/package.json /app/apps/${APP_NAME}/package.json
-WORKDIR /app/apps/${APP_NAME}
-
-USER node
-
-ARG PORT=5555
-ENV PORT=${PORT}
-ENV HOSTNAME 0.0.0.0
-EXPOSE ${PORT}
-
-CMD ["pnpm", "studio"]
+CMD ["/bin/sh", "-c", "node dist/main.js"]
