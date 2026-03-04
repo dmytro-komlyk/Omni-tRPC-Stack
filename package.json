@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "setup:local:env": "cp .env.example .env && cp apps/admin/.env.local.example apps/admin/.env.local && cp apps/website/.env.local.example apps/website/.env.local && cp apps/server/.env.local.example apps/server/.env && cp apps/mobile/.env.example apps/mobile/.env",
     "type-check": "dotenv -e .env -- turbo run type-check",
     "type-check:watch": "dotenv -e .env -- turbo run type-check --parallel --continue",
     "db:generate": "dotenv -e .env -- turbo run db:generate",
@@ -40,6 +41,7 @@
     "lint:fix": "pnpm -r run lint:fix",
     "clean": "dotenv -e .env -- turbo run clean",
     "clean:cache": "rm -rf node_modules/.cache .turbo",
+    "deep-clean": "turbo run clean && find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name '.turbo' -type d -prune -exec rm -rf '{}' + && find . -name '.next' -type d -prune -exec rm -rf '{}' +",
     "format": "prettier --write . --ignore-path .gitignore --ignore-path packages/prisma/schema.prisma",
     "prepare": "husky"
   },
