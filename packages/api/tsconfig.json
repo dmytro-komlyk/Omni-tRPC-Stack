@@ -16,6 +16,6 @@
     "jsx": "react-jsx",
     "lib": ["dom", "dom.iterable", "ES2022"]
   },
-  "include": ["src/**/*", "../../types/next-auth.d.ts"],
+  "include": ["src/**/*", "../../types/next-auth.d.ts", "../../types/globals.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
