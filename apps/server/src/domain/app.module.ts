@@ -10,6 +10,7 @@ import { TrpcModule } from './trpc/trpc.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
+      envFilePath: ['.env.local', '.env'],
       isGlobal: true,
     }),
     CacheModule.register({
