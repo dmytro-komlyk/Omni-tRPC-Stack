@@ -1,4 +1,4 @@
-name: CI/CD Build Pipeline # The name of the workflow
+name: CI/CD Build Pipeline
 
 on:
   pull_request:
@@ -7,71 +7,72 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
+  DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
   PROD_NAME: ${{ vars.PROD_NAME }}
-  APP_DOMAIN: ${{ vars.APP_DOMAIN }}
-  ADMIN_DOMAIN: ${{ vars.ADMIN_DOMAIN }}
   SERVER_DOMAIN: ${{ vars.SERVER_DOMAIN }}
+  ADMIN_DOMAIN: ${{ vars.ADMIN_DOMAIN }}
+  WEBSITE_DOMAIN: ${{ vars.WEBSITE_DOMAIN }}
 
 jobs:
   build:
-    name: 'Build Application'
+    name: 'Build and Push'
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
 
-      - name: 'Set up QEMU'
-        uses: docker/setup-qemu-action@v3
-
       - name: 'Set up Docker Buildx'
         uses: docker/setup-buildx-action@v3
 
-      - name: 'Login to GitHub Container Registry'
+      - name: 'Login to Docker Hub'
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: 'Build Server'
+      - name: 'Build & Push Server'
         if: contains(github.event.pull_request.labels.*.name, 'backend')
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
-          target: runner
+          context: .
           file: ./apps/server/Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-server:latest
+          tags: ${{ env.DOCKER_USER }}/${{ env.PROD_NAME }}-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
-            BUILD_MODE=prod
-            APP_DOMAIN=${{ env.SERVER_DOMAIN }}
-            ADMIN_DOMAIN=${{ env.ADMIN_DOMAIN }}
+            BUILD_MODE=production
 
-      - name: 'Build Client'
-        if: contains(github.event.pull_request.labels.*.name, 'frontend-client')
-        uses: docker/build-push-action@v4
+      - name: 'Build & Push Website'
+        if: contains(github.event.pull_request.labels.*.name, 'website')
+        uses: docker/build-push-action@v5
         with:
-          target: runner
-          file: ./apps/client/Dockerfile
+          context: .
+          file: ./apps/website/Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-client:latest
+          tags: ${{ env.DOCKER_USER }}/${{ env.PROD_NAME }}-website:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
-            BUILD_MODE=prod
+            BUILD_MODE=production
+            APP_HOSTNAME=${{ env.WEBSITE_DOMAIN }}
+            NEXT_PUBLIC_APP_DOMAIN=${{ env.WEBSITE_DOMAIN }}
+            NEXT_PUBLIC_ADMIN_DOMAIN=${{ env.ADMIN_DOMAIN }}
             NEXT_PUBLIC_SERVER_DOMAIN=${{ env.SERVER_DOMAIN }}
-            NEXT_PUBLIC_APP_DOMAIN=${{ env.APP_DOMAIN }}
 
-      - name: 'Build Admin'
-        if: contains(github.event.pull_request.labels.*.name, 'frontend-admin')
-        uses: docker/build-push-action@v4
+      - name: 'Build & Push Admin'
+        if: contains(github.event.pull_request.labels.*.name, 'admin')
+        uses: docker/build-push-action@v5
         with:
-          target: runner
+          context: .
           file: ./apps/admin/Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-admin:latest
+          tags: ${{ env.DOCKER_USER }}/${{ env.PROD_NAME }}-admin:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
-            BUILD_MODE=prod
-            NEXT_PUBLIC_SERVER_DOMAIN=${{ env.SERVER_DOMAIN }}
+            BUILD_MODE=production
+            APP_HOSTNAME=${{ env.ADMIN_DOMAIN }}
             NEXT_PUBLIC_APP_DOMAIN=${{ env.ADMIN_DOMAIN }}
+            NEXT_PUBLIC_WEBSITE_DOMAIN=${{ env.WEBSITE_DOMAIN }}
+            NEXT_PUBLIC_SERVER_DOMAIN=${{ env.SERVER_DOMAIN }}

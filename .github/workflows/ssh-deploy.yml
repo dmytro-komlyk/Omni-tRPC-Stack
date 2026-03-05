@@ -1,27 +1,23 @@
-name: CI/CD Deploy Pipeline # The name of the workflow
+name: CI/CD Deploy Pipeline
 
 on:
   pull_request:
-    types:
-      - closed
+    types: [closed]
+    branches:
+      - main
   workflow_dispatch:
 
 env:
-  BRANCH: ${{ vars.BRANCH_DEPLOYMENT }}
   PROJECT_SSH_FOLDER: ${{ vars.SSH_FOLDER }}
-  REGISTRY: ghcr.io
   PROD_NAME: ${{ vars.PROD_NAME }}
-  LABEL_SERVER: backend
-  LABEL_CLIENT: frontend-client
-  LABEL_ADMIN: frontend-admin
 
 jobs:
   deploy:
-    name: 'Publish Application'
+    name: 'Publish to VPS'
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
     steps:
-      - name: 'Run deploy on SSH'
-        if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == ${{ env.BRANCH }}
+      - name: 'Execute Remote Commands'
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ vars.SSH_HOST }}
@@ -29,23 +25,33 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ vars.SSH_PORT }}
           script: |
-            echo ${{ secrets.SSH_PASSWORD }} | sudo -S aa-remove-unknown
             cd ${{ env.PROJECT_SSH_FOLDER }}
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-            if [[ "${{ contains(github.event.pull_request.labels.*.name, env.LABEL_SERVER) }}" == "true" ]]; then
-                docker rm $(docker stop $(docker ps -a -q --filter ancestor=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-server:latest ))
-                docker rmi ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-server:latest
+
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+
+            IS_BACKEND="${{ contains(github.event.pull_request.labels.*.name, 'backend') }}"
+            IS_WEBSITE="${{ contains(github.event.pull_request.labels.*.name, 'website') }}"
+            IS_ADMIN="${{ contains(github.event.pull_request.labels.*.name, 'admin') }}"
+
+            SERVICES=""
+            if [ "$IS_BACKEND" == "true" ]; then
+                SERVICES="$SERVICES server"
+            fi
+            if [ "$IS_WEBSITE" == "true" ]; then
+                SERVICES="$SERVICES website"
+            fi
+            if [ "$IS_ADMIN" == "true" ]; then
+                SERVICES="$SERVICES admin"
             fi
 
-            if [[ "${{ contains(github.event.pull_request.labels.*.name, env.LABEL_CLIENT) }}" == "true" ]]; then
-                docker rm $(docker stop $(docker ps -a -q --filter ancestor=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-client:latest ))
-                docker rmi ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-client:latest
+            if [ ! -z "$SERVICES" ]; then
+                echo "🚀 Updating services:$SERVICES"
+                docker compose -f docker-compose.prod-ci.yml -p ${{ env.PROD_NAME }} pull $SERVICES
+                docker compose -f docker-compose.prod-ci.yml -p ${{ env.PROD_NAME }} up -d --no-deps $SERVICES
+            else
+                echo "⚠️ No relevant labels found. Updating entire stack..."
+                docker compose -f docker-compose.prod-ci.yml -p ${{ env.PROD_NAME }} pull
+                docker compose -f docker-compose.prod-ci.yml -p ${{ env.PROD_NAME }} up -d --remove-orphans
             fi
 
-            if [[ "${{ contains(github.event.pull_request.labels.*.name, env.LABEL_ADMIN) }}" == "true" ]]; then
-                docker rm $(docker stop $(docker ps -a -q --filter ancestor=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-admin:latest ))
-                docker rmi ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.PROD_NAME }}-admin:latest
-            fi
-
-            docker compose -f docker-compose.prod-ci.yml -p ${{ env.PROD_NAME }} pull
-            docker compose -f docker-compose.prod-ci.yml -p ${{ env.PROD_NAME }} up -d
+            docker image prune -f
