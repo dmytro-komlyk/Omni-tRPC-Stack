@@ -1,57 +1,27 @@
 version: '3.8'
 services:
-  mongo:
-    build:
-      target: mongo
-      dockerfile: ./database/Dockerfile
-      args:
-        MONGO_VERSION: 6
-    container_name: mongo-boilerplate
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME= #USERNAME
-      - MONGO_INITDB_ROOT_PASSWORD= #PASSWORD
-      - MONGO_INITDB_DATABASE= #DATABASE
-      - MONGO_REPLICA_HOST=mongo
-      - MONGO_REPLICA_PORT=27017
-      - MONGO_COMMAND=mongosh
-      - INIT_REPL_CMD=3
-    volumes:
-      - ./database/data:/data/db
-      - ./database/conf/mongod.conf.orig:/etc/mongod.conf
-    ports:
-      - 27017:27017
-    networks:
-      - backend
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
     restart: always
-    healthcheck:
-      # Use "mongo" instead of "mongosh" before v5.0
-      test:
-        [
-          'CMD',
-          'mongosh',
-          'admin',
-          '--port',
-          '27017',
-          '--eval',
-          "db.adminCommand('ping').ok",
-        ]
-      interval: 5s
-      timeout: 30s
-      start_period: 0s
-      retries: 30
-
-  mongo-seed:
-    build:
-      context: .
-      target: mongo-seed
-      dockerfile: ./database/Dockerfile
-      args:
-        MONGO_VERSION: 6
-    container_name: mongo-seed-boilerplate
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_HOST: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - backend
-    depends_on:
-      - mongo
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   nginx:
     image: 'jc21/nginx-proxy-manager:latest'
@@ -67,69 +37,58 @@ services:
       - backend
 
   server:
-    image: ghcr.io/<github.repository_owner>/<PROD_NAME>-server:latest
-    container_name: server-boilerplate
+    image: ${DOCKER_USER}/${PROD_NAME}-server:latest
+    container_name: server
     restart: unless-stopped
-    env_file: ./server/.env.docker.prod
+    env_file:
+      - .env
+      - ./apps/server/.env
     environment:
       - NODE_ENV=production
-    volumes:
-      - ./server/public/:/app/apps/server/public
-      - /app/node_modules
-      - /app/apps/server/node_modules
-      - shared-prisma:/app/apps/server/prisma
-    ports:
-      - 3000:3000
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public
     networks:
       - backend
     depends_on:
-      - mongo
+      postgres:
+        condition: service_healthy
     links:
-      - mongo
+      - postgres
+
+  website:
+    image: ${DOCKER_USER}/${PROD_NAME}-website:latest
+    container_name: website
+    restart: unless-stopped
+    env_file:
+      - .env
+      - ./apps/website/.env.local
+    environment:
+      - NODE_ENV=production
+      - APP_HTTP_URL=http://server:3000/trpc
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public
+    networks:
+      - backend
+    depends_on:
+      - server
 
   admin:
-    image: ghcr.io/<github.repository_owner>/<PROD_NAME>-admin:latest
-    container_name: admin-boilerplate
+    image: ${DOCKER_USER}/${PROD_NAME}-admin:latest
+    container_name: admin
     restart: unless-stopped
-    env_file: ./admin/.env.docker.prod
-    stdin_open: true
-    tty: true
+    env_file:
+      - .env
+      - ./apps/admin/.env.local
     environment:
       - NODE_ENV=production
-    volumes:
-      - /app/node_modules
-      - /app/apps/admin/node_modules
-    ports:
-      - 3002:3002
+      - APP_HTTP_URL=http://server:3000/trpc
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public
     networks:
-      - client
       - backend
-
-  client:
-    image: ghcr.io/<github.repository_owner>/<PROD_NAME>-client:latest
-    container_name: client-boilerplate
-    restart: unless-stopped
-    env_file: ./client/.env.docker.prod
-    stdin_open: true
-    tty: true
-    environment:
-      - NODE_ENV=production
-    volumes:
-      - /app/node_modules
-      - /app/apps/client/node_modules
-    ports:
-      - 3001:3001
-    networks:
-      - client
-      - backend
+    depends_on:
+      - server
 
 networks:
-  client:
-    driver: bridge
   backend:
     driver: bridge
 
 volumes:
-  database:
-    driver: local
-  shared-prisma:
+  postgres_data:

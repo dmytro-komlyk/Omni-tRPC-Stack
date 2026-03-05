@@ -8,6 +8,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import * as dotenv from 'dotenv';
+import { expand } from 'dotenv-expand';
 import { Logger, PinoLogger } from 'nestjs-pino';
 
 import { AppModule } from './domain/app.module';
@@ -15,7 +16,7 @@ import { openApiDocument } from './domain/trpc/openapi.plugin';
 import { createContext } from './domain/trpc/trpc.context';
 import { appRouter } from './domain/trpc/trpc.router';
 
-dotenv.config();
+expand(dotenv.config());
 
 async function bootstrap() {
   const port = process.env.APP_PORT as string;
@@ -27,8 +28,12 @@ async function bootstrap() {
     },
   });
 
+  const adapter = new FastifyAdapter({
+    trustProxy: true,
+  });
+
   try {
-    const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
+    const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter, {
       bufferLogs: true,
     });
 

@@ -13,7 +13,7 @@ services:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_HOST: postgres
     ports:
-      - '5432:5432'
+      - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -43,7 +43,7 @@ services:
       - /app/node_modules
       - /app/apps/server/node_modules
     ports:
-      - '3000:3000'
+      - 3000:3000
     networks:
       - backend
     depends_on:
@@ -74,7 +74,7 @@ services:
       - APP_HTTP_URL=http://server:3000/trpc
       - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public
     ports:
-      - '3001:3001'
+      - 3001:3001
     networks:
       - backend
     depends_on:
@@ -102,7 +102,7 @@ services:
       - APP_HTTP_URL=http://server:3000/trpc
       - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public
     ports:
-      - '3002:3002'
+      - 3002:3002
     networks:
       - backend
     depends_on:
