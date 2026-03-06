@@ -28,7 +28,7 @@ function Default(props: { maincard: JSX.Element }) {
           </NavLink>
           {maincard}
           <div className="absolute right-0 hidden h-full min-h-screen md:block lg:w-[49vw] 2xl:w-[44vw]">
-            <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-brand-500 lg:rounded-bl-[120px] xl:rounded-bl-[200px] shadow-2xl">
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-linear-to-br from-brand-400 to-brand-600 bg-cover bg-center lg:rounded-bl-[120px] xl:rounded-bl-[200px] shadow-2xl">
               <div
                 style={{
                   backgroundImage: `url(${authImg.src})`,
