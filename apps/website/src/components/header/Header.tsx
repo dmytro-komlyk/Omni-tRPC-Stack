@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { LuLogOut } from 'react-icons/lu';
 
 import { useLogout } from '@/hooks/useLogout';
+import routes from '@/routes';
 
 const Header = () => {
   const { data: session } = useSession();
@@ -72,14 +73,14 @@ const Header = () => {
           <Dropdown
             placement="bottom-end"
             classNames={{
-              base: 'w-64 border-1 rounded-2xl',
+              base: 'w-64 rounded-2xl',
               content: 'bg-white dark:bg-gray-800',
             }}
           >
             <DropdownTrigger>
               <Avatar
                 as="button"
-                className="cursor-pointer transition-transform"
+                className="cursor-pointer transition-transform bg-gray-700 text-white"
                 name={session.user.nickName || session.user.email?.[0]}
                 size="md"
                 src={session.user.avatarUrl || undefined}
@@ -96,20 +97,40 @@ const Header = () => {
                 <DropdownItem
                   key="profile"
                   isReadOnly
-                  className="gap-2 opacity-100 hover:cursor-default"
+                  className="gap-2 opacity-100 hover:cursor-default data-[hover=true]:bg-transparent dark:data-[hover=true]:bg-transparent"
                 >
                   <User
                     avatarProps={{
                       size: 'sm',
                       src: session.user.avatarUrl || undefined,
+                      classNames: {
+                        base: 'bg-gray-700 text-white',
+                      },
                     }}
                     classNames={{
-                      name: 'text-center font-semibold text-gray-900 dark:text-white',
+                      name: 'text-center font-medium text-gray-900 dark:text-white',
                     }}
                     name={session.user.nickName || 'User'}
                     description={session.user.email}
                   />
                 </DropdownItem>
+              </DropdownSection>
+
+              <DropdownSection showDivider aria-label="Navigation">
+                {routes.map((route) => (
+                  <DropdownItem
+                    key={route.path}
+                    as={Link}
+                    href={`${baseUrl}${route.layout}${route.path}`}
+                    startContent={<div className="text-gray-600 dark:text-white">{route.icon}</div>}
+                    classNames={{
+                      base: 'text-gray-800 dark:text-white data-[hover=true]:bg-gray-100 dark:data-[hover=true]:bg-white/10',
+                      title: 'font-medium',
+                    }}
+                  >
+                    {route.name}
+                  </DropdownItem>
+                ))}
               </DropdownSection>
 
               <DropdownSection aria-label="Actions">

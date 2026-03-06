@@ -1,6 +1,7 @@
 import Header from '@/components/header/Header';
 import Image from 'next/image';
 
+import ThemeFixedPlugin from '@/components/plugins/ThemeFixedPlugin';
 import NextLogo from '@/public/next.svg';
 import VercelLogo from '@/public/vercel.svg';
 
@@ -9,6 +10,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen items-center justify-center bg-zinc-50 font-sans">
       <Header />
       <main className="flex grow w-full max-w-3xl flex-col items-center justify-between px-16 py-32 sm:items-start">
+        <ThemeFixedPlugin />
         <Image
           src={NextLogo}
           className="dark:invert"

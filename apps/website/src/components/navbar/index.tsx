@@ -1,6 +1,13 @@
 'use client';
 
-import { Listbox, ListboxItem, Image as NextUIImage, User } from '@heroui/react';
+import {
+  Link,
+  Listbox,
+  ListboxItem,
+  ListboxSection,
+  Image as NextUIImage,
+  User,
+} from '@heroui/react';
 import { useThemeCookieStore, useUIStore } from '@package/store/ui';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
@@ -98,8 +105,8 @@ const Navbar = ({ routes }: INavbarProps) => {
           button={
             <NextUIImage
               as={Image}
-              width={40}
-              height={40}
+              width={35}
+              height={35}
               className="cursor-pointer rounded-full"
               src={avatar.src}
               alt="User avatar"
@@ -107,13 +114,16 @@ const Navbar = ({ routes }: INavbarProps) => {
           }
           classNames="py-2 top-10 -left-[210px] w-max"
         >
-          <div className="shadow-shadow-500 flex w-64 flex-col rounded-2xl border-1 bg-white p-2 shadow-xl dark:bg-gray-800 dark:text-white dark:shadow-none">
+          <div className="shadow-shadow-500 flex w-64 flex-col rounded-2xl bg-white p-2 shadow-xl dark:bg-gray-800 dark:text-white dark:shadow-none">
             {/* Header */}
             <div className="mb-4 flex justify-start px-2">
               <User
                 avatarProps={{
                   size: 'sm',
-                  src: avatar.src,
+                  src: session?.user.avatarUrl || undefined,
+                  classNames: {
+                    base: 'bg-gray-700 text-white',
+                  },
                 }}
                 classNames={{
                   name: 'text-text-center font-semibold text-gray-900 dark:text-white',
@@ -129,20 +139,38 @@ const Navbar = ({ routes }: INavbarProps) => {
             {/* Menu items */}
             <div className="flex w-full flex-col gap-1">
               <Listbox aria-label="Listbox menu with sections" variant="flat">
-                {/* List menu items */}
-                <ListboxItem
-                  key="delete"
-                  color="danger"
-                  onPress={onSignOutClick}
-                  endContent={<LuLogOut className="size-5 text-red-500 hover:text-red-600" />}
-                  classNames={{
-                    base: 'hover:bg-red-100',
-                    title: 'text-sm font-medium text-red-500  hover:text-red-600 lg:text-base',
-                  }}
-                  isDisabled={isLoading}
-                >
-                  Log Out
-                </ListboxItem>
+                <ListboxSection showDivider={routes.length > 0}>
+                  {routes.map((route) => (
+                    <ListboxItem
+                      key={route.path}
+                      as={Link}
+                      href={`${route.layout}${route.path}`}
+                      startContent={
+                        <div className="text-gray-600 dark:text-white">{route.icon}</div>
+                      }
+                      className="h-10 rounded-xl transition-colors data-[hover=true]:bg-gray-100 dark:data-[hover=true]:bg-white/10"
+                    >
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {route.name}
+                      </span>
+                    </ListboxItem>
+                  ))}
+                </ListboxSection>
+
+                <ListboxSection>
+                  <ListboxItem
+                    key="logout"
+                    color="danger"
+                    onPress={onSignOutClick}
+                    endContent={<LuLogOut className="size-5 text-red-500 hover:text-red-600" />}
+                    classNames={{
+                      title: 'text-sm font-medium text-red-500 hover:text-red-600 lg:text-base',
+                    }}
+                    isDisabled={isLoading}
+                  >
+                    Log Out
+                  </ListboxItem>
+                </ListboxSection>
               </Listbox>
             </div>
           </div>

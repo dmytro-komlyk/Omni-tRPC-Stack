@@ -28,16 +28,16 @@ function Default(props: { maincard: JSX.Element }) {
           </NavLink>
           {maincard}
           <div className="absolute right-0 hidden h-full min-h-screen md:block lg:w-[49vw] 2xl:w-[44vw]">
-            <div
-              style={{ backgroundImage: authImg ? `url(${authImg})` : '' }}
-              className={`absolute flex h-full w-full items-end justify-center bg-linear-to-br from-brand-400 to-brand-600 bg-cover bg-center lg:rounded-bl-[120px] xl:rounded-bl-[200px]`}
-            >
-              <div className="relative flex h-full w-full">
-                <div
-                  style={{ backgroundImage: `url(${authImg.src})` }}
-                  className="flex h-full w-full bg-cover"
-                />
-              </div>
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-brand-500 lg:rounded-bl-[120px] xl:rounded-bl-[200px] shadow-2xl">
+              <div
+                style={{
+                  backgroundImage: `url(${authImg.src})`,
+                  backgroundSize: 'contain',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                }}
+                className="absolute inset-0 h-full w-full"
+              />
             </div>
           </div>
         </div>

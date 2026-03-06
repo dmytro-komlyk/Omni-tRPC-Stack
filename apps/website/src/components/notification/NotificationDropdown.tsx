@@ -145,14 +145,14 @@ const NotificationDropdown = () => {
                 <div className="flex w-fit items-center justify-center rounded-xl bg-linear-to-b text-3xl text-white">
                   {/* {mapSeverityIcon[notification.severity]} */}
                 </div>
-                <div className="ml-2 flex size-full flex-col justify-center gap-1 rounded-lg px-1 text-sm">
+                {/* <div className="ml-2 flex size-full flex-col justify-center gap-1 rounded-lg px-1 text-sm">
                   <p className="text-left text-base font-bold text-gray-800 dark:text-white/90">
                     {notification.title}
                   </p>
                   <p className="text-left text-sm text-gray-700 dark:text-gray-400">
                     {notification.message}
                   </p>
-                </div>
+                </div> */}
                 <div className="font-base flex basis-1/5 justify-center text-xs text-gray-900 dark:text-white">
                   {/* {notification.action && (
                     <Button

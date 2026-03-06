@@ -18,7 +18,7 @@ import { IoClose } from 'react-icons/io5';
 import DashIcon from '@/components/icons/DashIcon';
 import NavLink from '@/components/link/NavLink';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { appName, websiteUrl } from '@/utils/constants';
+import { appName, baseUrl } from '@/utils/constants';
 
 import type { IRoute } from '@/types/navigation';
 import Links from './components/Links';
@@ -86,7 +86,7 @@ const Sidebar = ({ routes }: ISidebarProps) => {
         <NextUILink
           as={Link}
           className="text-landing-dark-grey-900 text-2xl font-extrabold dark:text-white"
-          href={`${websiteUrl}`}
+          href={`${baseUrl}`}
         >
           {appName}
         </NextUILink>
