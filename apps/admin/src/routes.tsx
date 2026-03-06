@@ -1,4 +1,6 @@
 import React from 'react';
+import { IconType } from 'react-icons';
+import { RxDashboard } from 'react-icons/rx';
 
 interface IRoute {
   name: string;
@@ -9,11 +11,23 @@ interface IRoute {
 
 const routes: IRoute[] = [
   {
-    name: 'Example',
+    name: 'Dashboard',
     layout: '/',
-    path: 'example',
-    icon: '',
+    path: 'dashboard',
+    icon: <RxDashboard className="h-6 w-6" />,
   },
 ];
+
+export interface SubRouteItem {
+  path: string;
+  name: string;
+  icon: IconType;
+}
+
+export type SubRoutes = {
+  [key: string]: SubRouteItem[];
+};
+
+export const subRoutes: SubRoutes = {};
 
 export default routes;
