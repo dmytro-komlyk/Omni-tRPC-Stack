@@ -25,6 +25,7 @@ async function main() {
       nickName: 'Admin',
       role: 'SUPER_ADMIN',
       emailVerified: new Date(),
+      forcePasswordChange: true,
     },
   });
 }

@@ -35,25 +35,28 @@ enum UserRole {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String?   @unique
-  emailVerified DateTime?
-  role          UserRole  @default(USER)
-  password      String?
+  id                  String    @id @default(uuid())
+  email               String?   @unique
+  emailVerified       DateTime?
+  role                UserRole  @default(USER)
+  password            String?
+  forcePasswordChange Boolean   @default(false)
 
   firstName String?
   lastName  String?
   nickName  String?
   avatarUrl String?
 
-  isTwoFactorEnabled Boolean @default(false)
-  twoFactorSecret    String?
+  isTwoFactorEnabled   Boolean  @default(false)
+  twoFactorSecret      String?
+  twoFactorBackupCodes String[] @default([])
 
   isOnline     Boolean   @default(false)
   lastActiveAt DateTime?
 
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
+  passwordChangedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -92,10 +95,11 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(uuid())
-  sessionToken String   @unique
-  userId       String
-  expiresAt    DateTime
+  id                  String   @id @default(uuid())
+  sessionToken        String   @unique
+  userId              String
+  expiresAt           DateTime
+  isTwoFactorVerified Boolean  @default(false)
 
   clientId     String?
   userAgent    String?
