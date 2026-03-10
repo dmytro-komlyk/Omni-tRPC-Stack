@@ -761,6 +761,14 @@ export async function receivePasswordResetLink({
     },
   });
 
+  if (!user) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Invalid email',
+      cause: 'User not found',
+    });
+  }
+
   const isAdminHost = domain.origin?.includes('admin');
   const isAdminRole = ['ADMIN', 'SUPER_ADMIN'].includes(user.role);
 
