@@ -9,7 +9,7 @@
     "start:prod": "node server.js",
     "lint": "pnpm exec eslint .",
     "lint:fix": "pnpm lint --fix",
-    "type-check": "next build --no-lint",
+    "type-check": "tsc --noEmit",
     "clean": "rimraf .next"
   },
   "dependencies": {
