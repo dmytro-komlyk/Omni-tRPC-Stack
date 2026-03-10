@@ -138,22 +138,42 @@ export const verifyEmailOutputSchema = z.object({
 
 export type VerifyEmailOutputData = z.infer<typeof verifyEmailOutputSchema>;
 
-export const outputAuthSchema = z.object({
+const userBaseSchema = z.object({
+  id: z.string(),
+  role: userRole,
+  email: z.string().nullable(),
+  nickName: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
+  forcePasswordChange: z.boolean(),
+});
+
+export const outputAuthSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('SUCCESS'),
+    accessToken: z.string(),
+    accessTokenExp: z.date(),
+    refreshToken: z.string().optional(),
+    refreshTokenExp: z.date(),
+    sessionToken: z.string(),
+    user: userBaseSchema,
+  }),
+
+  z.object({
+    status: z.literal('REQUIRES_2FA'),
+    mfaToken: z.string(),
+    user: userBaseSchema,
+  }),
+]);
+
+export const outputAuthProviderSchema = z.object({
+  status: z.literal('SUCCESS'),
   accessToken: z.string(),
   accessTokenExp: z.date(),
   refreshToken: z.string().optional(),
   refreshTokenExp: z.date(),
   sessionToken: z.string(),
-  user: z.object({
-    id: z.string(),
-    role: userRole,
-    email: z.string().nullable(),
-    nickName: z.string().nullable(),
-    avatarUrl: z.string().nullable(),
-  }),
+  user: userBaseSchema,
 });
-
-export const outputAuthProviderSchema = outputAuthSchema.extend({});
 
 export const inputBackendTokensSchema = z.object({
   email: z.string().email(),

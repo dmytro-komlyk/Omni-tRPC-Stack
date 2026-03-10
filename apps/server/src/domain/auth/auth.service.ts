@@ -27,7 +27,8 @@ import {
   UserRole,
   VerifyEmailOutputData,
 } from './auth.schema';
-import { generateBackendTokens } from './jwt.service';
+import { generateBackendTokens, verifyToken } from './jwt.service';
+import { verifyTwoFactorToken } from './two-factor.service';
 
 export async function signIn({
   data,
@@ -50,11 +51,19 @@ export async function signIn({
   }
 
   const isAdminHost = domain.origin?.includes('admin');
+  const isAdminRole = ['ADMIN', 'SUPER_ADMIN'].includes(user.role);
 
-  if (isAdminHost && user.role === 'USER') {
+  if (isAdminHost && !isAdminRole) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied. This area is for administrative personnel only.',
+    });
+  }
+
+  if (!isAdminHost && isAdminRole) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Admins must log in through the administrative console.',
     });
   }
 
@@ -152,6 +161,34 @@ export async function signIn({
     });
   }
 
+  if (user.isTwoFactorEnabled) {
+    const { accessToken: mfaToken } = await generateBackendTokens(
+      {
+        sub: user.id,
+        email: user.email as string,
+        type: '2FA_PENDING',
+      },
+      {
+        updateAccess: true,
+        updateRefresh: false,
+        clientId: domain.clientId ?? 'unknown',
+      }
+    );
+
+    return {
+      status: 'REQUIRES_2FA',
+      mfaToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        nickName: user.nickName,
+        avatarUrl: user.avatarUrl,
+        forcePasswordChange: user.forcePasswordChange,
+      },
+    };
+  }
+
   const isWeb = !!domain.origin;
 
   await prisma.user.update({
@@ -192,6 +229,7 @@ export async function signIn({
   });
 
   return {
+    status: 'SUCCESS',
     accessToken,
     refreshToken,
     accessTokenExp,
@@ -203,6 +241,85 @@ export async function signIn({
       role: user.role,
       nickName: user.nickName,
       avatarUrl: user.avatarUrl,
+      forcePasswordChange: user.forcePasswordChange,
+    },
+  };
+}
+
+export async function verify2FALogin({
+  data,
+  domain,
+}: {
+  data: { mfaToken: string; code: string };
+  domain: Domain;
+}): Promise<OutputAuthData> {
+  const payload = await verifyToken({ type: '2fa', token: data.mfaToken });
+
+  if (!payload.sub) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'User ID is missing in token',
+    });
+  }
+
+  if (payload.type !== '2FA_PENDING') {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token type' });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: payload.sub },
+  });
+
+  if (!user || !user.twoFactorSecret) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: '2FA not configured' });
+  }
+
+  const isValid = await verifyTwoFactorToken(data.code, user.twoFactorSecret);
+
+  if (!isValid) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid 2FA code' });
+  }
+
+  const isWeb = !!domain.origin;
+  const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+    await generateBackendTokens(
+      { sub: user.id, email: user.email as string },
+      {
+        updateAccess: true,
+        updateRefresh: true,
+        clientId: domain.clientId ?? 'unknown',
+        userAgent: domain.userAgent ?? undefined,
+      }
+    );
+
+  const sessionToken = isWeb ? crypto.randomUUID() : refreshToken;
+  const sessionExpires = isWeb ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : refreshTokenExp;
+
+  await prisma.session.create({
+    data: {
+      sessionToken,
+      userId: user.id,
+      expiresAt: sessionExpires,
+      isTwoFactorVerified: true,
+      clientId: domain.clientId,
+      userAgent: domain.userAgent,
+    },
+  });
+
+  return {
+    status: 'SUCCESS',
+    accessToken,
+    refreshToken,
+    accessTokenExp,
+    refreshTokenExp,
+    sessionToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      nickName: user.nickName,
+      avatarUrl: user.avatarUrl,
+      forcePasswordChange: user.forcePasswordChange,
     },
   };
 }
@@ -437,6 +554,7 @@ export async function signInProvider({
   });
 
   return {
+    status: 'SUCCESS',
     accessToken,
     refreshToken,
     accessTokenExp,
@@ -448,6 +566,7 @@ export async function signInProvider({
       email: user.email,
       nickName: user.nickName,
       avatarUrl: user.avatarUrl || data.avatarUrl,
+      forcePasswordChange: user.forcePasswordChange,
     },
   };
 }
@@ -625,9 +744,11 @@ export async function signOut({
 export async function receivePasswordResetLink({
   data,
   domain,
+  logger,
 }: {
   data: ForgotPasswordFormData;
   domain: Domain;
+  logger?: any;
 }): Promise<ForgotPasswordOutputData> {
   const user = await prisma.user.findUnique({
     where: { email: data.email },
@@ -641,23 +762,26 @@ export async function receivePasswordResetLink({
   });
 
   const isAdminHost = domain.origin?.includes('admin');
+  const isAdminRole = ['ADMIN', 'SUPER_ADMIN'].includes(user.role);
 
   const SUCCESS_MESSAGE =
     'If an account exists for that email, a reset link has been sent. Please check your inbox and spam folder.';
-
-  if (user && isAdminHost && user.role === 'USER') {
-    return { success: true, message: 'Verification email sent again' };
-  }
-
-  if (user && !user.password) {
-    console.info(`[Auth] OAuth user ${user.email} is setting a password for the first time.`);
-  }
 
   if (!user) {
     return {
       success: true,
       message: SUCCESS_MESSAGE,
     };
+  }
+
+  if (user && isAdminRole && !isAdminHost) {
+    logger.warn(`[Security] Admin ${user.email} tried to reset password via public website.`);
+    return { success: true, message: SUCCESS_MESSAGE };
+  }
+
+  if (user && !isAdminRole && isAdminHost) {
+    logger.warn(`[Security] User ${user.email} tried to reset password via admin panel.`);
+    return { success: true, message: SUCCESS_MESSAGE };
   }
 
   const lastToken = user.verificationTokens?.[0];
@@ -669,7 +793,7 @@ export async function receivePasswordResetLink({
     const diffInMinutes = diffInMs / (1000 * 60);
 
     if (diffInMinutes < cooldownInMinutes) {
-      console.warn(`[RateLimit] Password reset attempt too frequent for: ${data.email}`);
+      logger.warn(`[RateLimit] Password reset attempt too frequent for: ${data.email}`);
       const waitSeconds = Math.ceil((cooldownInMinutes - diffInMinutes) * 60);
       throw new TRPCError({
         code: 'TOO_MANY_REQUESTS',

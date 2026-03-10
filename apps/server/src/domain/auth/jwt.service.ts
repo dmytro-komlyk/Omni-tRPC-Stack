@@ -1,5 +1,5 @@
 import { prisma } from '@package/prisma';
-import { addDays, addHours } from 'date-fns';
+import { addDays, addHours, addMinutes } from 'date-fns';
 import jwt from 'jsonwebtoken';
 
 import { GenerateOptions, InputBackendTokens, OutputBackendTokens } from './auth.schema';
@@ -8,11 +8,11 @@ export const verifyToken = async ({
   type,
   token,
 }: {
-  type: 'access' | 'refresh' | 'reset';
+  type: 'access' | 'refresh' | 'reset' | '2fa';
   token: string;
 }): Promise<jwt.JwtPayload> => {
   const secret =
-    type === 'access'
+    type === 'access' || type === '2fa'
       ? (process.env.JWT_ACCESS_TOKEN as string)
       : type === 'refresh'
         ? (process.env.JWT_REFRESH_TOKEN as string)
@@ -35,7 +35,7 @@ export const verifyToken = async ({
 };
 
 export async function generateBackendTokens(
-  payload: InputBackendTokens,
+  payload: InputBackendTokens & { type?: '2FA_PENDING' },
   options: GenerateOptions & { clientId?: string | undefined; userAgent?: string | undefined } = {
     updateAccess: true,
     updateRefresh: false,
@@ -46,7 +46,23 @@ export async function generateBackendTokens(
   const userId = payload.sub;
   const clientId = options.clientId || 'unknown';
 
-  // 1. Access token
+  // 1. 2FA token
+  if (payload.type === '2FA_PENDING') {
+    const mfaExpDate = addMinutes(now, 10);
+    const mfaExpUnix = Math.floor(mfaExpDate.getTime() / 1000);
+
+    const mfaToken = jwt.sign(
+      { ...payload, exp: mfaExpUnix },
+      process.env.JWT_ACCESS_TOKEN as string
+    );
+
+    return {
+      accessToken: mfaToken,
+      accessTokenExp: mfaExpDate,
+    } as OutputBackendTokens;
+  }
+
+  // 2. Access token
   if (options.updateAccess) {
     const accessExpDate = addHours(now, 1);
     // const accessExpDate = addMinutes(now, 2); // for test
@@ -91,7 +107,7 @@ export async function generateBackendTokens(
     result.accessTokenExp = accessExpDate;
   }
 
-  // 2. Refresh token
+  // 3. Refresh token
   if (options.updateRefresh) {
     const refreshExpDate = addDays(now, 7);
     // const refreshExpDate = addMinutes(now, 10); // for test

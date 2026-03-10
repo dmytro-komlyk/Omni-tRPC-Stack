@@ -245,6 +245,7 @@ export const authRouter = router({
       const response: ForgotPasswordOutputData = await receivePasswordResetLink({
         data: input,
         domain: ctx.domain,
+        logger: ctx.logger,
       });
       ctx.logger.log({ email: input.email, path: 'auth.forgotPassword' }, response.message);
       return response;
