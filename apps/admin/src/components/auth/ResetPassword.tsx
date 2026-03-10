@@ -3,6 +3,7 @@
 import { Button, Input } from '@heroui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AuthSchema, trpc } from '@package/api';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
@@ -15,6 +16,8 @@ interface ResetPasswordProps {
 }
 
 const ResetPassword = ({ token, email }: ResetPasswordProps) => {
+  const router = useRouter();
+  const [isSuccess, setIsSuccess] = useState(false);
   const [isVisiblePassword, setIsVisiblePassword] = useState<boolean>(false);
   const [isVisiblePasswordConfirmation, setIsVisiblePasswordConfirmation] =
     useState<boolean>(false);
@@ -43,6 +46,11 @@ const ResetPassword = ({ token, email }: ResetPasswordProps) => {
     try {
       const response = await resetPassword.mutateAsync({ email, password: data.password, token });
       showToast.success(response.message);
+      setIsSuccess(true);
+
+      setTimeout(() => {
+        router.push(`/auth/sign-in?email=${encodeURIComponent(email)}`);
+      }, 2000);
     } catch (error: any) {
       showToast.error(`${error.message}`);
     }
@@ -129,8 +137,8 @@ const ResetPassword = ({ token, email }: ResetPasswordProps) => {
 
         <Button
           type="submit"
-          disabled={!isValid || resetPassword.isPending || !isDirty}
-          isLoading={resetPassword.isPending}
+          disabled={!isValid || resetPassword.isPending || isSuccess || !isDirty}
+          isLoading={resetPassword.isPending || isSuccess}
           spinner={<LoadingSpinner />}
           className="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300 dark:active:bg-brand-200 w-full rounded-xl py-3 text-base font-medium text-white transition duration-200 dark:text-white"
         >

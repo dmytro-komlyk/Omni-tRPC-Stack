@@ -2,9 +2,14 @@ import SignIn from '@/components/auth/SignIn';
 import Default from '@/components/auth/variants/DefaultAuthLayout';
 import { baseUrl } from '@/utils/constants';
 
-async function SignInPage({ searchParams }: { searchParams: Promise<{ callbackUrl: string }> }) {
+async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string; email?: string }>;
+}) {
   const params = await searchParams;
   const callbackUrl = params.callbackUrl || `${baseUrl}/dashboard?toast=welcome`;
+  const defaultEmail = params.email || '';
 
   return (
     <Default
@@ -29,7 +34,7 @@ async function SignInPage({ searchParams }: { searchParams: Promise<{ callbackUr
                 Authorized personnel only. Please identify yourself to manage the ecosystem.
               </p>
 
-              <SignIn callbackUrl={callbackUrl} />
+              <SignIn callbackUrl={callbackUrl} defaultEmail={defaultEmail} />
 
               <div className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-gray-50 py-3 dark:bg-white/5">
                 <div className="size-2 animate-pulse rounded-full bg-green-500" />

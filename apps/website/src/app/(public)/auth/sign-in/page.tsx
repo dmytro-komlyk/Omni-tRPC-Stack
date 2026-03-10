@@ -3,9 +3,14 @@ import SignInProvider from '@/components/auth/SignInProvider';
 import Default from '@/components/auth/variants/DefaultAuthLayout';
 import { baseUrl } from '@/utils/constants';
 
-async function SignInPage({ searchParams }: { searchParams: Promise<{ callbackUrl: string }> }) {
+async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string; email?: string }>;
+}) {
   const params = await searchParams;
   const callbackUrl = params.callbackUrl || `${baseUrl}/dashboard?toast=welcome`;
+  const defaultEmail = params.email || '';
 
   return (
     <Default
@@ -17,7 +22,7 @@ async function SignInPage({ searchParams }: { searchParams: Promise<{ callbackUr
             <p className="mb-7 ml-1 text-base text-gray-600">
               Enter your email and password to sign in!
             </p>
-            <SignIn callbackUrl={callbackUrl} />
+            <SignIn callbackUrl={callbackUrl} defaultEmail={defaultEmail} />
             <div className="my-6 flex items-center gap-3">
               <div className="h-px w-full bg-gray-200 dark:bg-navy-700!" />
               <p className="text-base text-gray-600"> or </p>

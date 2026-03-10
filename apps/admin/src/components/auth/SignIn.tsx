@@ -13,9 +13,10 @@ import { showToast } from '@/components/Toast';
 
 interface SignInProps {
   callbackUrl: string;
+  defaultEmail?: string;
 }
 
-const SignIn = ({ callbackUrl }: SignInProps) => {
+const SignIn = ({ callbackUrl, defaultEmail = '' }: SignInProps) => {
   const [isSubmittingCredentials, setIsSubmittingCredentials] = useState(false);
   const [isVisiblePassword, setIsVisiblePassword] = useState<boolean>(false);
 
@@ -26,7 +27,7 @@ const SignIn = ({ callbackUrl }: SignInProps) => {
   } = useForm<AuthSchema.SignInData>({
     resolver: zodResolver(AuthSchema.signInSchema),
     defaultValues: {
-      email: '',
+      email: defaultEmail,
       password: '',
     },
     mode: 'onChange',

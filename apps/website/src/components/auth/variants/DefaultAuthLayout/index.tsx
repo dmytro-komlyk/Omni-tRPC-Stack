@@ -23,7 +23,7 @@ function Default(props: { maincard: JSX.Element }) {
                   fill="#A3AED0"
                 />
               </svg>
-              <p className="ml-3 text-sm text-gray-600">Back to Dashboard</p>
+              <p className="ml-3 text-sm text-gray-600">Back to Website</p>
             </div>
           </NavLink>
           {maincard}
