@@ -1,5 +1,5 @@
+// next-auth.d.ts
 import 'next-auth';
-import 'next-auth/jwt';
 
 declare module 'next-auth' {
   interface User {
@@ -8,11 +8,14 @@ declare module 'next-auth' {
     role: string;
     nickName: string | null;
     avatarUrl: string | null;
-    accessToken: string;
-    accessTokenExp: Date | string | number;
-    refreshTokenExp: Date | string | number;
-    sessionToken: string;
-    clientId: string | undefined;
+    forcePasswordChange?: boolean;
+    accessToken?: string;
+    accessTokenExp?: Date | string | number;
+    refreshTokenExp?: Date | string | number;
+    sessionToken?: string;
+    clientId?: string | undefined;
+    requires2FA?: boolean;
+    mfaToken?: string | undefined;
   }
 
   interface Session {
@@ -21,8 +24,9 @@ declare module 'next-auth' {
       email: string;
       role: string;
       nickName: string;
-      accessToken: string;
-      sessionToken: string;
+      accessToken?: string;
+      sessionToken?: string;
+      requires2FA?: boolean;
     } & DefaultSession['user'];
     error?: 'RefreshAccessTokenError' | 'RefreshTokenExpired';
   }
@@ -30,14 +34,17 @@ declare module 'next-auth' {
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    id: string;
-    role: string;
-    email: string | null;
-    nickName: string | null;
-    avatarUrl: string | null;
-    accessToken: string;
-    accessTokenExp: number;
-    refreshTokenExp: number;
-    sessionToken: string;
+    id?: string | undefined;
+    role?: string | undefined;
+    email?: string | null | undefined;
+    nickName?: string | null | undefined;
+    requires2FA?: boolean | undefined;
+    mfaToken?: string | undefined;
+    accessToken?: string | undefined;
+    sessionToken?: string | undefined;
+    accessTokenExp?: number | undefined;
+    refreshTokenExp?: number | undefined;
+    clientId?: string | undefined;
+    error?: 'RefreshAccessTokenError' | 'RefreshTokenExpired' | null | undefined;
   }
 }

@@ -70,14 +70,27 @@ export const authOptions: AuthConfig = {
             password: credentials.password as string,
           });
 
+          if (response.status === 'REQUIRES_2FA') {
+            return {
+              ...response.user,
+              requires2FA: true,
+              mfaToken: response.mfaToken,
+              clientId: ctx.clientId,
+              accessToken: '',
+              sessionToken: '',
+              accessTokenExp: 0,
+              refreshTokenExp: 0,
+            } as User;
+          }
+
           return {
             ...response.user,
-            role: response.user.role,
+            requires2FA: false,
             accessToken: response.accessToken,
             accessTokenExp: response.accessTokenExp,
             refreshTokenExp: response.refreshTokenExp,
             sessionToken: response.sessionToken,
-            clientId: ctx.clientId,
+            clientId: ctx.clientId!,
           };
         } catch (error: any) {
           console.error('Authorize Error:', error.message);
@@ -179,7 +192,7 @@ export const authOptions: AuthConfig = {
           user.refreshTokenExp = response.refreshTokenExp;
           user.nickName = response.user.nickName;
           user.sessionToken = response.sessionToken;
-          user.clientId = ctx.clientId;
+          user.clientId = ctx.clientId!;
 
           return true;
         } catch (error) {
@@ -196,17 +209,26 @@ export const authOptions: AuthConfig = {
       const ctx = await getClientContext();
 
       if (user) {
+        const accessExp = user.accessTokenExp
+          ? Math.floor(new Date(user.accessTokenExp).getTime() / 1000)
+          : undefined;
+        const refreshExp = user.refreshTokenExp
+          ? Math.floor(new Date(user.refreshTokenExp).getTime() / 1000)
+          : undefined;
+
         return {
           ...token,
-          id: user.id as string,
-          email: user.email as string,
-          role: user.role as string,
-          nickName: user.nickName as string,
-          accessToken: user.accessToken as string,
-          sessionToken: user.sessionToken as string,
-          accessTokenExp: Math.floor(new Date(user.accessTokenExp).getTime() / 1000),
-          refreshTokenExp: Math.floor(new Date(user.refreshTokenExp).getTime() / 1000),
-          clientId: user.clientId || ctx.clientId,
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          nickName: user.nickName,
+          accessToken: user.accessToken || '',
+          sessionToken: user.sessionToken || '',
+          accessTokenExp: accessExp,
+          refreshTokenExp: refreshExp,
+          clientId: user.clientId || ctx.clientId || 'unknown',
+          requires2FA: user.requires2FA || false,
+          mfaToken: user.mfaToken || undefined,
           error: undefined,
         };
       }
@@ -259,6 +281,7 @@ export const authOptions: AuthConfig = {
           nickName: token.nickName as string,
           accessToken: token.accessToken as string,
           sessionToken: token.sessionToken as string,
+          requires2FA: token.requires2FA,
         };
         (session as any).error = token.error || null;
       }
