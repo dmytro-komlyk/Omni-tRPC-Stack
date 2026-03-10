@@ -10,9 +10,11 @@ import {
   ForgotPasswordFormData,
   ForgotPasswordOutputData,
   InputBackendTokens,
+  InviteUserData,
   OutputAccessToken,
   OutputAuthData,
   OutputAuthProviderData,
+  OutputInviteData,
   OutputSignOutData,
   ResendVerificationEmailData,
   ResetPasswordData,
@@ -22,6 +24,7 @@ import {
   SignOutData,
   SignUpData,
   SignUpResponseData,
+  UserRole,
   VerifyEmailOutputData,
 } from './auth.schema';
 import { generateBackendTokens } from './jwt.service';
@@ -43,6 +46,15 @@ export async function signIn({
       code: 'UNAUTHORIZED',
       message: 'Invalid email or password',
       cause: 'User not found',
+    });
+  }
+
+  const isAdminHost = domain.origin?.includes('admin');
+
+  if (isAdminHost && user.role === 'USER') {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied. This area is for administrative personnel only.',
     });
   }
 
@@ -188,6 +200,7 @@ export async function signIn({
     user: {
       id: user.id,
       email: user.email,
+      role: user.role,
       nickName: user.nickName,
       avatarUrl: user.avatarUrl,
     },
@@ -264,6 +277,12 @@ export async function resendVerification({
       },
     },
   });
+
+  const isAdminHost = domain.origin?.includes('admin');
+
+  if (user && isAdminHost && user.role === 'USER') {
+    return { success: true, message: 'Verification email sent again' };
+  }
 
   if (!user) {
     return { success: true, message: 'Verification email sent again' };
@@ -425,6 +444,7 @@ export async function signInProvider({
     sessionToken,
     user: {
       id: user.id,
+      role: user.role,
       email: user.email,
       nickName: user.nickName,
       avatarUrl: user.avatarUrl || data.avatarUrl,
@@ -437,8 +457,38 @@ export async function signUp({
   data,
 }: {
   domain: Domain;
-  data: SignUpData;
+  data: SignUpData & { inviteToken?: string };
 }): Promise<SignUpResponseData> {
+  const isAdminHost = domain.origin?.includes('admin');
+  let assignedRole: UserRole = 'USER';
+
+  if (isAdminHost) {
+    if (!data.inviteToken) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Registration on this domain requires an invitation.',
+      });
+    }
+
+    const invite = await prisma.invite.findUnique({
+      where: {
+        token: data.inviteToken,
+        email: data.email,
+        isAccepted: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!invite) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Invalid, expired, or already used invitation.',
+      });
+    }
+
+    assignedRole = invite.role;
+  }
+
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
   });
@@ -493,6 +543,7 @@ export async function signUp({
       email: data.email,
       password: hashedPassword,
       nickName: data.nickName,
+      role: assignedRole,
       emailVerified: null,
     },
   });
@@ -589,12 +640,18 @@ export async function receivePasswordResetLink({
     },
   });
 
-  if (user && !user.password) {
-    console.info(`[Auth] OAuth user ${user.email} is setting a password for the first time.`);
-  }
+  const isAdminHost = domain.origin?.includes('admin');
 
   const SUCCESS_MESSAGE =
     'If an account exists for that email, a reset link has been sent. Please check your inbox and spam folder.';
+
+  if (user && isAdminHost && user.role === 'USER') {
+    return { success: true, message: 'Verification email sent again' };
+  }
+
+  if (user && !user.password) {
+    console.info(`[Auth] OAuth user ${user.email} is setting a password for the first time.`);
+  }
 
   if (!user) {
     return {
@@ -675,6 +732,15 @@ export async function resetPassword({
     },
   });
 
+  const isAdminHost = domain.origin?.includes('admin');
+
+  if (user && isAdminHost && user.role === 'USER') {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied.',
+    });
+  }
+
   const tokenRecord = user?.verificationTokens[0];
 
   if (!user || !tokenRecord || tokenRecord.expiresAt < new Date()) {
@@ -739,5 +805,56 @@ export async function updateAccessBackendToken({
   return {
     accessToken: accessToken,
     accessTokenExp: accessTokenExp,
+  };
+}
+
+export async function createInvite({
+  data,
+}: {
+  data: InviteUserData;
+  domain: Domain;
+}): Promise<OutputInviteData> {
+  const existingUser = await prisma.user.findUnique({ where: { email: data.email } });
+
+  if (existingUser) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'User with this email already exists.',
+    });
+  }
+
+  await prisma.invite.deleteMany({
+    where: { email: data.email },
+  });
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  const invite = await prisma.invite.create({
+    data: {
+      email: data.email,
+      token,
+      role: data.role,
+      invitedById: data.adminId,
+      expiresAt,
+    },
+  });
+
+  const link = `${process.env.APP_ADMIN_URL}/auth/sign-up?token=${token}&email=${encodeURIComponent(invite.email)}`;
+
+  await sendEmail({
+    email: invite.email,
+    payload: {
+      link,
+      role: invite.role,
+      appName: process.env.APP_NAME,
+    },
+    template: '/templates/inviteEmail.handlebars',
+    subject: `Invitation to join ${process.env.APP_NAME}`,
+  });
+
+  return {
+    success: true,
+    message: 'Invitation sent successfully',
   };
 }

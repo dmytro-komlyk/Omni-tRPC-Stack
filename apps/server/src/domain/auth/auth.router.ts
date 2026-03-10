@@ -7,12 +7,14 @@ import {
   forgotPasswordOutputSchema,
   forgotPasswordSchema,
   inputBackendTokensSchema,
+  inviteUserSchema,
   OutputAccessToken,
   outputAccessTokenSchema,
   OutputAuthData,
   outputAuthProviderSchema,
   outputAuthSchema,
   outputCheckAuthSchema,
+  outputInviteSchema,
   OutputSignOutData,
   outputSignOutSchema,
   OutputVerifyOuthTokenData,
@@ -31,6 +33,7 @@ import {
   verifyEmailSchema,
 } from './auth.schema';
 import {
+  createInvite,
   receivePasswordResetLink,
   resendVerification,
   resetPassword,
@@ -265,6 +268,27 @@ export const authRouter = router({
         domain: ctx.domain,
       });
       ctx.logger.log({ email: input.email, path: 'auth.resetPassword' }, response.message);
+      return response;
+    }),
+  inviteUser: protectedProcedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.inviteUser',
+        summary: 'Invite a new user',
+        tags: ['auth'],
+        protect: true,
+      },
+    })
+    .input(inviteUserSchema)
+    .output(outputInviteSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response: ResetPasswordOutputData = await createInvite({
+        data: input,
+        domain: ctx.domain,
+      });
+      ctx.logger.log({ email: input.email, path: 'auth.inviteUser' }, response.message);
       return response;
     }),
 });

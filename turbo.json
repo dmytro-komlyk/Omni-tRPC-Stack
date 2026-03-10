@@ -33,8 +33,8 @@
     },
     "db:seed": {
       "cache": false,
-      "dependsOn": ["db:migrate", "db:generate"],
-      "env": ["DATABASE_URL"]
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL", "APP_SUPER_ADMIN_EMAIL", "APP_SUPER_ADMIN_PASSWORD"]
     },
     "db:reset": {
       "cache": false,

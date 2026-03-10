@@ -8,5 +8,6 @@ export default defineConfig({
   },
   migrations: {
     path: './migrations',
+    seed: 'tsx seed.ts',
   },
 });

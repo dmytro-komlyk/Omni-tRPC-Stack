@@ -3,6 +3,9 @@ import { z } from 'zod';
 export const providerType = z.enum(['google', 'facebook']);
 export type ProviderType = z.infer<typeof providerType>;
 
+export const userRole = z.enum(['USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN']);
+export type UserRole = z.infer<typeof userRole>;
+
 export const tokenType = z.enum(['access', 'refresh', 'reset']);
 export type TokenJWT = z.infer<typeof tokenType>;
 
@@ -143,6 +146,7 @@ export const outputAuthSchema = z.object({
   sessionToken: z.string(),
   user: z.object({
     id: z.string(),
+    role: userRole,
     email: z.string().nullable(),
     nickName: z.string().nullable(),
     avatarUrl: z.string().nullable(),
@@ -218,3 +222,18 @@ export type ResetPasswordData = z.infer<typeof resetPasswordSchema>;
 export const resetPasswordOutputSchema = verifyEmailOutputSchema.extend({});
 
 export type ResetPasswordOutputData = z.infer<typeof resetPasswordOutputSchema>;
+
+export const inviteUserSchema = z.object({
+  email: z.email(),
+  role: userRole,
+  adminId: z.string(),
+});
+
+export type InviteUserData = z.infer<typeof inviteUserSchema>;
+
+export const outputInviteSchema = z.object({
+  message: z.string().min(1),
+  success: z.boolean(),
+});
+
+export type OutputInviteData = z.infer<typeof outputInviteSchema>;

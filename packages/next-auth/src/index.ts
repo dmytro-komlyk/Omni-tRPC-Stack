@@ -72,6 +72,7 @@ export const authOptions: AuthConfig = {
 
           return {
             ...response.user,
+            role: response.user.role,
             accessToken: response.accessToken,
             accessTokenExp: response.accessTokenExp,
             refreshTokenExp: response.refreshTokenExp,
@@ -172,6 +173,7 @@ export const authOptions: AuthConfig = {
           });
 
           user.id = response.user.id;
+          user.role = response.user.role;
           user.accessToken = response.accessToken;
           user.accessTokenExp = response.accessTokenExp;
           user.refreshTokenExp = response.refreshTokenExp;
@@ -198,6 +200,7 @@ export const authOptions: AuthConfig = {
           ...token,
           id: user.id as string,
           email: user.email as string,
+          role: user.role as string,
           nickName: user.nickName as string,
           accessToken: user.accessToken as string,
           sessionToken: user.sessionToken as string,
@@ -252,6 +255,7 @@ export const authOptions: AuthConfig = {
           ...session.user,
           id: token.id as string,
           email: token.email as string,
+          role: token.role as string,
           nickName: token.nickName as string,
           accessToken: token.accessToken as string,
           sessionToken: token.sessionToken as string,

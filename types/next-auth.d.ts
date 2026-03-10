@@ -5,10 +5,11 @@ declare module 'next-auth' {
   interface User {
     id: string;
     email: string | null;
+    role: string;
     nickName: string | null;
     avatarUrl: string | null;
     accessToken: string;
-    accessTokenExp: Date | string | number; // Бэкенд может вернуть строку или дату
+    accessTokenExp: Date | string | number;
     refreshTokenExp: Date | string | number;
     sessionToken: string;
     clientId: string | undefined;
@@ -18,6 +19,7 @@ declare module 'next-auth' {
     user: {
       id: string;
       email: string;
+      role: string;
       nickName: string;
       accessToken: string;
       sessionToken: string;
@@ -29,6 +31,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
+    role: string;
     email: string | null;
     nickName: string | null;
     avatarUrl: string | null;

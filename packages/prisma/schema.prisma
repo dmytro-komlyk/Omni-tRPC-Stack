@@ -11,10 +11,34 @@ datasource db {
   provider = "postgresql"
 }
 
+model Invite {
+  id    String   @id @default(uuid())
+  email String   @unique
+  token String   @unique
+  role  UserRole @default(ADMIN)
+
+  invitedById String?
+  invitedBy   User?   @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  isAccepted Boolean  @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@map("invites")
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
 model User {
   id            String    @id @default(uuid())
   email         String?   @unique
   emailVerified DateTime?
+  role          UserRole  @default(USER)
   password      String?
 
   firstName String?
@@ -34,6 +58,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  invites            Invite[]            @relation("InvitedBy")
   accounts           Account[]
   sessions           Session[]
   tokens             Token[]
