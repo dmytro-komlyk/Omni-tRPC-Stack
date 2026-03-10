@@ -1,14 +1,15 @@
+const path = require('path');
+const sharedConfig = require('@package/tailwindcss-config');
+
 /** @type {import('tailwindcss').Config} */
+
 module.exports = {
+  ...sharedConfig,
   content: [
-    './App.{js,jsx,ts,tsx}',
-    './screens/**/*.{js,jsx,ts,tsx}',
-    './pages/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
-    './src/**/*.{js,jsx,ts,tsx}',
+    path.resolve(__dirname, './app/**/*.{js,ts,jsx,tsx}'),
+    path.resolve(__dirname, './components/**/*.{js,ts,jsx,tsx}'),
+    path.resolve(__dirname, './context/**/*.{js,ts,jsx,tsx}'),
   ],
-  theme: {
-    extend: {},
-  },
+  presets: [require('nativewind/preset')],
   plugins: [],
 };

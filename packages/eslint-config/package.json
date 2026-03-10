@@ -1,31 +1,36 @@
 {
-  "name": "@repo/eslint-config",
+  "name": "@package/eslint-config",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": "./index.js",
+    "./next": "./next.js",
+    "./nest": "./nest.js",
+    "./react-native": "./react-native.js",
+    "./library": "./library.js",
+    "./react-internal": "./react-internal.js"
+  },
   "files": [
-    "library.js",
-    "next.js",
-    "react-internal.js"
+    "*.js",
+    "*.d.ts"
   ],
   "devDependencies": {
-    "eslint-config-turbo": "^1.10.12",
-    "eslint-plugin-only-warn": "^1.1.0",
-    "@typescript-eslint/parser": "^6.11.0",
-    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@next/eslint-plugin-next": "^16.0.4",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.0.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import-x": "^4.16.1",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "eslint-config-expo": "~10.0.0",
     "typescript": "^5.2.2",
-    "eslint": "^8.46.0",
-    "eslint-config-airbnb": "^19.0.4",
-    "eslint-config-airbnb-typescript": "^17.1.0",
-    "eslint-config-next": "^13.4.12",
-    "eslint-config-prettier": "^8.9.0",
-    "eslint-plugin-import": "^2.28.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "eslint-plugin-react": "^7.34.1",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-simple-import-sort": "^10.0.0",
-    "eslint-plugin-tailwindcss": "^3.13.0",
-    "eslint-plugin-testing-library": "^5.11.0",
-    "eslint-plugin-unused-imports": "^3.0.0",
-    "typescript-eslint": "^7.8.0"
+    "typescript-eslint": "^8.48.0"
   }
 }

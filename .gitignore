@@ -1,7 +1,15 @@
 # Dependencies
 node_modules
-.pnp
-.pnp.js
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
 
 # Build Outputs
 .turbo
@@ -12,14 +20,19 @@ out
 android
 ios
 web-build
+build
 
 # Native
+.kotlin/
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+
+# Metro
+.metro-health-check*
 
 # Uploads
 apps/server/public
@@ -28,10 +41,16 @@ apps/server/public
 .env
 .env.local
 .env.docker.local
+.env.docker
 
 # Database
+apps/database/backups
 apps/database/data
-apps/database/seed
+apps/database/seeds
+
+# Prisma
+packages/prisma/seeds
+packages/prisma/src/generated
 
 # Nginx
 
@@ -44,6 +63,7 @@ apps/database/seed
 *.launch
 .settings/
 *.sublime-workspace
+cache.*
 
 # Logs
 logs
@@ -53,10 +73,18 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+*.tsbuildinfo
+tsup.config.bundled_*.mjs
+next-env.d.ts
+expo-env.d.ts
 
 # OS
 .DS_Store
 *.pem
+
+# generated native folders
+/ios
+/android
 
 # IDE - VSCode
 .vscode/*

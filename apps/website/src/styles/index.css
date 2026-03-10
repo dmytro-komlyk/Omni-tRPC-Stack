@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@config '../../tailwind.config.ts';
+
+@layer base {
+  html {
+    @apply bg-lightPrimary;
+  }
+
+  html.dark {
+    @apply bg-navy-900;
+  }
+}

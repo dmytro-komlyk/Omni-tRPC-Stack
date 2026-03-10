@@ -1,0 +1,65 @@
+{
+  "name": "@package/store",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./secure": {
+      "require": "./dist/secure.store.js",
+      "types": "./dist/secure.store.d.ts",
+      "import": "./dist/secure.store.mjs"
+    },
+    "./auth-web": {
+      "require": "./dist/auth-web.store.js",
+      "types": "./dist/auth-web.store.d.ts",
+      "import": "./dist/auth-web.store.mjs"
+    },
+    "./auth-native": {
+      "require": "./dist/auth-native.store.js",
+      "types": "./dist/auth-native.store.d.ts",
+      "import": "./dist/auth-native.store.mjs"
+    },
+    "./ui": {
+      "require": "./dist/ui.store.js",
+      "types": "./dist/ui.store.d.ts",
+      "import": "./dist/ui.store.mjs"
+    },
+    "./config-web": {
+      "require": "./dist/config-web.store.js",
+      "types": "./dist/config-web.store.d.ts",
+      "import": "./dist/config-web.store.mjs"
+    },
+    "./config-native": {
+      "require": "./dist/config-native.store.js",
+      "types": "./dist/config-native.store.d.ts",
+      "import": "./dist/config-native.store.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:types": "tsc --emitDeclarationOnly -p tsconfig.types.json",
+    "build:all": "pnpm build && pnpm build:types",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "dev": "concurrently --kill-others-on-fail -n TSUP,TYPES \"tsup --watch\" \"tsc -p tsconfig.types.json --watch --preserveWatchOutput --incremental\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "clean": "rimraf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "expo-crypto": "^15.0.8",
+    "expo-secure-store": "~15.0.8",
+    "js-cookie": "^3.0.5",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@package/eslint-config": "workspace:*",
+    "@types/js-cookie": "^3.0.6",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.1",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.3"
+  }
+}

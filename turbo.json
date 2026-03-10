@@ -1,17 +1,114 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"]
-    },
-    "deploy": {
-      "dependsOn": ["build", "lint"]
-    },
-    "lint": {},
-    "dev": {
+  "ui": "tui",
+  "globalDependencies": ["tsconfig.json", ".env.*", "pnpm-lock.yaml"],
+  "tasks": {
+    "db:generate": {
       "cache": false,
-      "persistent": true
+      "env": ["DATABASE_URL"]
+    },
+    "db:push": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:init": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:changes": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:deploy": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:status": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    },
+    "db:seed": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL", "APP_SUPER_ADMIN_EMAIL", "APP_SUPER_ADMIN_PASSWORD"]
+    },
+    "db:reset": {
+      "cache": false,
+      "dependsOn": [],
+      "env": ["DATABASE_URL"]
+    },
+    "db:full": {
+      "cache": false,
+      "dependsOn": ["db:push", "db:seed"],
+      "env": ["DATABASE_URL"]
+    },
+    "studio": {
+      "cache": false,
+      "persistent": true,
+      "env": ["DATABASE_URL"]
+    },
+    "build": {
+      "dependsOn": ["db:generate", "^build", "^build:types"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", ".expo/**"],
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
+    },
+    "build:types": {
+      "dependsOn": ["db:generate", "^build:types"],
+      "outputs": ["dist/**/*.d.ts", "tsconfig.tsbuildinfo"],
+      "cache": true
+    },
+    "build:all": {
+      "dependsOn": ["build", "build:types"]
+    },
+    "type-check": {
+      "dependsOn": ["build:types"],
+      "outputs": ["tsconfig.tsbuildinfo"],
+      "cache": true
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true,
+      "interactive": true,
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
+    },
+    "ios": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true,
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
+    },
+    "android": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true,
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
+    },
+    "lint": {
+      "cache": false,
+      "env": []
+    },
+    "lint:fix": {
+      "cache": false,
+      "env": []
+    },
+    "clean": {
+      "cache": false,
+      "outputs": []
+    },
+    "start": {
+      "cache": false,
+      "persistent": true,
+      "env": ["APP_HTTP_URL", "DATABASE_URL"]
+    },
+    "expo:export": {
+      "dependsOn": ["^build"],
+      "outputs": [".expo/**", "dist/**"],
+      "env": ["DATABASE_URL"]
     }
   }
 }
