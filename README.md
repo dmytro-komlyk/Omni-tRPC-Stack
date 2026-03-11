@@ -48,7 +48,6 @@ The standout feature is **End-to-End Type-Safety** across the entire stack using
 │ ├── website # Customer Web App (Next.js)
 │ ├── mobile # Cross-platform App (Expo / React Native)
 │ ├── server # Backend API (Nest.js)
-│ └── database # Dockerized PostgreSQL configurations
 ├── packages
 │ ├── api # Shared tRPC router & client logic & shared Zod validation schemas
 │ ├── store # Shared state management (Zustand)
