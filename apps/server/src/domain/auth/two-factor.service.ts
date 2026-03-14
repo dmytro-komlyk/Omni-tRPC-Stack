@@ -3,7 +3,9 @@ import crypto from 'crypto';
 import { generateSecret, generateURI, verify } from 'otplib';
 import QRCode from 'qrcode';
 
-export async function generateTwoFactorSecret(userEmail: string) {
+import { OutputSetupTwoFatorData } from './auth.schema';
+
+export async function generateTwoFactorSecret(userEmail: string): Promise<OutputSetupTwoFatorData> {
   const secret = generateSecret();
   const appName = process.env.APP_NAME as string;
 
@@ -23,8 +25,8 @@ export async function generateTwoFactorSecret(userEmail: string) {
 
 export async function verifyTwoFactorToken(token: string, secret: string): Promise<boolean> {
   try {
-    const isValid = await verify({ token, secret });
-    return !!isValid;
+    const response = await verify({ token, secret });
+    return response.valid;
   } catch (err) {
     console.error('2FA Verification Error:', err);
     return false;

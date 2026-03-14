@@ -75,6 +75,7 @@ export const authOptions: AuthConfig = {
               ...response.user,
               requires2FA: true,
               mfaToken: response.mfaToken,
+              isTwoFactorEnabled: response.user.isTwoFactorEnabled,
               clientId: ctx.clientId,
               accessToken: '',
               sessionToken: '',
@@ -90,6 +91,7 @@ export const authOptions: AuthConfig = {
             accessTokenExp: response.accessTokenExp,
             refreshTokenExp: response.refreshTokenExp,
             sessionToken: response.sessionToken,
+            isTwoFactorEnabled: response.user.isTwoFactorEnabled as boolean,
             clientId: ctx.clientId!,
           };
         } catch (error: any) {
@@ -203,12 +205,50 @@ export const authOptions: AuthConfig = {
       return true;
     },
 
-    jwt: async ({ token, user }: { token: JWT; user: User }): Promise<JWT> => {
+    jwt: async ({
+      token,
+      user,
+      trigger,
+      session,
+    }: {
+      token: JWT;
+      user: User;
+      trigger?: 'signIn' | 'signUp' | 'update';
+      session?: Session;
+    }): Promise<JWT> => {
       console.log(`Auth JWT Token = ${JSON.stringify(token)}`);
       console.log(`Auth JWT User = ${JSON.stringify(user)}`);
       const ctx = await getClientContext();
 
+      if (trigger === 'update' && session) {
+        if (session.user) {
+          return {
+            ...token,
+            ...session.user,
+            forcePasswordChange: session.user.forcePasswordChange ?? token.forcePasswordChange,
+          };
+        }
+        return { ...token, ...session };
+      }
+
       if (user) {
+        if (user.requires2FA) {
+          return {
+            ...token,
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            nickName: user.nickName,
+            clientId: user.clientId || ctx.clientId || 'unknown',
+            requires2FA: true,
+            isTwoFactorEnabled: user.isTwoFactorEnabled as boolean,
+            mfaToken: user.mfaToken,
+            accessToken: '',
+            sessionToken: '',
+            forcePasswordChange: user.forcePasswordChange || false,
+          };
+        }
+
         const accessExp = user.accessTokenExp
           ? Math.floor(new Date(user.accessTokenExp).getTime() / 1000)
           : undefined;
@@ -228,9 +268,15 @@ export const authOptions: AuthConfig = {
           refreshTokenExp: refreshExp,
           clientId: user.clientId || ctx.clientId || 'unknown',
           requires2FA: user.requires2FA || false,
+          isTwoFactorEnabled: user.isTwoFactorEnabled as boolean,
           mfaToken: user.mfaToken || undefined,
+          forcePasswordChange: user.forcePasswordChange as boolean,
           error: undefined,
         };
+      }
+
+      if (token.requires2FA) {
+        return token;
       }
 
       const currentTime = Math.floor(Date.now() / 1000);
@@ -281,7 +327,10 @@ export const authOptions: AuthConfig = {
           nickName: token.nickName as string,
           accessToken: token.accessToken as string,
           sessionToken: token.sessionToken as string,
-          requires2FA: token.requires2FA,
+          requires2FA: token.requires2FA as boolean,
+          mfaToken: token.mfaToken as string,
+          forcePasswordChange: token.forcePasswordChange as boolean,
+          isTwoFactorEnabled: token.isTwoFactorEnabled,
         };
         (session as any).error = token.error || null;
       }

@@ -37,6 +37,7 @@
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.4.2",
     "bcryptjs": "^3.0.3",
+    "otplib": "^13.3.0",
     "pg": "^8.16.3",
     "prisma": "^7.4.2"
   },

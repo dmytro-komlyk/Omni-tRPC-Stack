@@ -2,6 +2,8 @@ import { JwtPayload } from 'jsonwebtoken';
 
 import { procedure, protectedProcedure, router } from '../trpc/trpc.server';
 import {
+  activeTwoFatorSchema,
+  changeForcedPasswordSchema,
   checkTokenSchema,
   ForgotPasswordOutputData,
   forgotPasswordOutputSchema,
@@ -10,11 +12,17 @@ import {
   inviteUserSchema,
   OutputAccessToken,
   outputAccessTokenSchema,
+  OutputActiveTwoFatorData,
+  outputActiveTwoFatorSchema,
   OutputAuthData,
   outputAuthProviderSchema,
   outputAuthSchema,
+  OutputChangeForcedPasswordData,
+  outputChangeForcedPasswordSchema,
   outputCheckAuthSchema,
   outputInviteSchema,
+  OutputSetupTwoFatorData,
+  outputSetupTwoFatorSchema,
   OutputSignOutData,
   outputSignOutSchema,
   OutputVerifyOuthTokenData,
@@ -31,17 +39,22 @@ import {
   VerifyEmailOutputData,
   verifyEmailOutputSchema,
   verifyEmailSchema,
+  verifyTwoFatorSchema,
 } from './auth.schema';
 import {
+  activate2FA,
+  changeForcedPassword,
   createInvite,
   receivePasswordResetLink,
   resendVerification,
   resetPassword,
+  setup2FALogin,
   signIn,
   signInProvider,
   signOut,
   signUp,
   updateAccessBackendToken,
+  verify2FALogin,
   verifyEmail,
 } from './auth.service';
 import { verifyToken } from './jwt.service';
@@ -271,6 +284,33 @@ export const authRouter = router({
       ctx.logger.log({ email: input.email, path: 'auth.resetPassword' }, response.message);
       return response;
     }),
+  changeForcedPassword: protectedProcedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.changeForcedPassword',
+        summary: 'Change force user password',
+        tags: ['auth'],
+        protect: true,
+      },
+    })
+    .input(changeForcedPasswordSchema)
+    .output(outputChangeForcedPasswordSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response: OutputChangeForcedPasswordData = await changeForcedPassword({
+        data: {
+          password: input.password,
+          userId: ctx.user.id,
+        },
+        domain: ctx.domain,
+      });
+      ctx.logger.log(
+        { email: ctx.user.email, path: 'auth.changeForcedPassword' },
+        response.message
+      );
+      return response;
+    }),
   inviteUser: protectedProcedure
     .meta({
       openapi: {
@@ -290,6 +330,98 @@ export const authRouter = router({
         domain: ctx.domain,
       });
       ctx.logger.log({ email: input.email, path: 'auth.inviteUser' }, response.message);
+      return response;
+    }),
+  setup2FA: protectedProcedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'GET',
+        path: '/auth.setup2FA',
+        summary: 'Setup two-factor',
+        tags: ['auth'],
+        protect: true,
+      },
+    })
+    .output(outputSetupTwoFatorSchema)
+    .query(async ({ ctx }) => {
+      const response: OutputSetupTwoFatorData = await setup2FALogin({
+        user: {
+          id: ctx.user.id,
+          email: ctx.user.email as string,
+        },
+        domain: ctx.domain,
+      });
+      ctx.logger.log(
+        { email: ctx.user.email, path: 'auth.setup2FA' },
+        'Two-factor setup successful'
+      );
+      return response;
+    }),
+  verify2FA: procedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.verify2FA',
+        summary: 'Verify two-factor code',
+        tags: ['auth'],
+        protect: false,
+      },
+    })
+    .input(verifyTwoFatorSchema)
+    .output(outputAuthSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response: OutputAuthData = await verify2FALogin({
+        data: {
+          code: input.code,
+          mfaToken: input.mfaToken,
+        },
+        domain: ctx.domain,
+      });
+
+      ctx.logger.log(
+        {
+          email: response.user.email,
+          path: 'auth.verify2FA',
+          status: response.status,
+        },
+        'Two-factor verification successful'
+      );
+
+      return response;
+    }),
+  activate2FA: protectedProcedure
+    .meta({
+      openapi: {
+        enabled: true,
+        method: 'POST',
+        path: '/auth.activate2FA',
+        summary: 'Activated two-factor',
+        tags: ['auth'],
+        protect: true,
+      },
+    })
+    .input(activeTwoFatorSchema)
+    .output(outputActiveTwoFatorSchema)
+    .mutation(async ({ input, ctx }) => {
+      const response: OutputActiveTwoFatorData = await activate2FA({
+        data: {
+          userId: ctx.user.id,
+          code: input.code,
+        },
+        domain: ctx.domain,
+      });
+
+      ctx.logger.log(
+        {
+          email: ctx.user.email,
+          path: 'auth.activate2FA',
+          status: response.success,
+        },
+        'Two-factor activate successful'
+      );
+
       return response;
     }),
 });
