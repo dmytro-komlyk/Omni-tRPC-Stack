@@ -43,11 +43,6 @@ apps/server/public
 .env.docker.local
 .env.docker
 
-# Database
-apps/database/backups
-apps/database/data
-apps/database/seeds
-
 # Prisma
 packages/prisma/seeds
 packages/prisma/src/generated
