@@ -7,14 +7,17 @@ import { compare, hash } from 'bcryptjs';
 import { sendEmail } from '../../utils/nodemailer/sendEmail';
 import { Domain } from '../trpc/trpc.context';
 import {
+  ActiveTwoFatorData,
   ForgotPasswordFormData,
   ForgotPasswordOutputData,
   InputBackendTokens,
   InviteUserData,
   OutputAccessToken,
+  OutputActiveTwoFatorData,
   OutputAuthData,
   OutputAuthProviderData,
   OutputInviteData,
+  OutputSetupTwoFatorData,
   OutputSignOutData,
   ResendVerificationEmailData,
   ResetPasswordData,
@@ -24,11 +27,16 @@ import {
   SignOutData,
   SignUpData,
   SignUpResponseData,
+  TwoFactorData,
   UserRole,
   VerifyEmailOutputData,
 } from './auth.schema';
 import { generateBackendTokens, verifyToken } from './jwt.service';
-import { verifyTwoFactorToken } from './two-factor.service';
+import {
+  generateBackupCodes,
+  generateTwoFactorSecret,
+  verifyTwoFactorToken,
+} from './two-factor.service';
 
 export async function signIn({
   data,
@@ -161,6 +169,16 @@ export async function signIn({
     });
   }
 
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      lastActiveAt: new Date(),
+      isOnline: true,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    },
+  });
+
   if (user.isTwoFactorEnabled) {
     const { accessToken: mfaToken } = await generateBackendTokens(
       {
@@ -185,21 +203,12 @@ export async function signIn({
         nickName: user.nickName,
         avatarUrl: user.avatarUrl,
         forcePasswordChange: user.forcePasswordChange,
+        isTwoFactorEnabled: user.isTwoFactorEnabled,
       },
     };
   }
 
   const isWeb = !!domain.origin;
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      lastActiveAt: new Date(),
-      isOnline: true,
-      failedLoginAttempts: 0,
-      lockedUntil: null,
-    },
-  });
 
   const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
     await generateBackendTokens(
@@ -242,8 +251,34 @@ export async function signIn({
       nickName: user.nickName,
       avatarUrl: user.avatarUrl,
       forcePasswordChange: user.forcePasswordChange,
+      isTwoFactorEnabled: user.isTwoFactorEnabled,
     },
   };
+}
+
+export async function setup2FALogin({
+  user,
+}: {
+  user: TwoFactorData;
+  domain: Domain;
+}): Promise<OutputSetupTwoFatorData> {
+  const currentUser = await prisma.user.findUnique({ where: { id: user.id } });
+
+  if (currentUser?.isTwoFactorEnabled) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: '2FA is already enabled',
+    });
+  }
+
+  const { secret, qrCodeUrl } = await generateTwoFactorSecret(user.email);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { twoFactorSecret: secret, isTwoFactorEnabled: false },
+  });
+
+  return { secret, qrCodeUrl };
 }
 
 export async function verify2FALogin({
@@ -320,7 +355,64 @@ export async function verify2FALogin({
       nickName: user.nickName,
       avatarUrl: user.avatarUrl,
       forcePasswordChange: user.forcePasswordChange,
+      isTwoFactorEnabled: user.isTwoFactorEnabled,
     },
+  };
+}
+
+export async function activate2FA({
+  data,
+}: {
+  data: ActiveTwoFatorData & { userId: string };
+  domain: Domain;
+}): Promise<OutputActiveTwoFatorData> {
+  const user = await prisma.user.findUnique({
+    where: { id: data.userId },
+    select: {
+      id: true,
+      twoFactorSecret: true,
+      isTwoFactorEnabled: true,
+    },
+  });
+
+  if (!user || !user.twoFactorSecret) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: '2FA secret not found. Please restart the setup process.',
+    });
+  }
+
+  const isValid = await verifyTwoFactorToken(data.code, user.twoFactorSecret);
+
+  if (!isValid) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Invalid verification code. Please try again.',
+    });
+  }
+
+  const { plain, hashed } = await generateBackupCodes();
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      isTwoFactorEnabled: true,
+      twoFactorBackupCodes: hashed,
+    },
+  });
+
+  await prisma.session.updateMany({
+    where: {
+      userId: user.id,
+    },
+    data: {
+      isTwoFactorVerified: true,
+    },
+  });
+
+  return {
+    success: true,
+    backupCodes: plain,
   };
 }
 
@@ -917,6 +1009,70 @@ export async function resetPassword({
     success: true,
     message:
       'Your password has been successfully updated. You can now log in with your new credentials.',
+  };
+}
+
+export async function changeForcedPassword({
+  data,
+  domain,
+}: {
+  data: any;
+  domain: Domain;
+}): Promise<ResetPasswordOutputData> {
+  const user = await prisma.user.findUnique({
+    where: { id: data.userId },
+  });
+
+  if (!user) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'User session not found.',
+    });
+  }
+
+  const isAdminHost = domain.origin?.includes('admin');
+
+  if (isAdminHost && user.role === 'USER') {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied.',
+    });
+  }
+
+  const hashedPassword = await hash(data.password, 12);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      forcePasswordChange: false,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    },
+  });
+
+  await prisma.verificationToken.deleteMany({
+    where: {
+      identifier: user.email!,
+      type: 'PASSWORD_RESET',
+    },
+  });
+
+  const loginLink = `${domain.origin}/auth/sign-in`;
+  await sendEmail({
+    email: user.email!,
+    payload: {
+      link: loginLink,
+      name: user.nickName || user.firstName || 'Admin',
+      appName: process.env.APP_NAME || 'Admin Console',
+    },
+    template: '/templates/passwordUpdatedConfirmation.handlebars',
+    subject: 'Security Notice: Your credentials have been initialized',
+  });
+
+  return {
+    success: true,
+    message: 'Security protocol initialized. Your permanent password is now active.',
   };
 }
 

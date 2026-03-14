@@ -28,10 +28,21 @@ export default function Admin({ children }: { children: React.ReactNode }) {
         } `}
       >
         {/* Main Content */}
-        <main className=" 3xl:container flex min-h-screen w-full min-w-full flex-col px-4 transition-all 2xl:px-10">
+        <main className="3xl:container flex min-h-screen w-full min-w-full flex-col px-4 transition-all 2xl:px-10">
           {/* Routes */}
           <Navbar routes={routes} />
-          <div className="mx-auto flex w-full grow p-2 pt-6! md:p-2">{children}</div>
+          <div className="relative flex">
+            <div
+              className="absolute mx-4 my-4 min-h-[calc(100vh-140px)] inset-0 z-0 opacity-[0.07] dark:opacity-[0.1]"
+              style={{
+                backgroundImage: `linear-gradient(#4A5568 1px, transparent 1px), linear-gradient(90deg, #4A5568 1px, transparent 1px)`,
+                backgroundSize: '40px 40px',
+              }}
+            />
+            <div className="mx-auto flex w-full min-h-[calc(100vh-200px)] grow p-2 pt-6! md:p-2">
+              {children}
+            </div>
+          </div>
           <div className="mt-auto p-3">
             <Footer />
           </div>

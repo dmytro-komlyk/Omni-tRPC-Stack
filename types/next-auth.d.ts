@@ -9,6 +9,7 @@ declare module 'next-auth' {
     nickName: string | null;
     avatarUrl: string | null;
     forcePasswordChange?: boolean;
+    isTwoFactorEnabled?: boolean;
     accessToken?: string;
     accessTokenExp?: Date | string | number;
     refreshTokenExp?: Date | string | number;
@@ -27,6 +28,8 @@ declare module 'next-auth' {
       accessToken?: string;
       sessionToken?: string;
       requires2FA?: boolean;
+      forcePasswordChange?: boolean;
+      isTwoFactorEnabled?: boolean;
     } & DefaultSession['user'];
     error?: 'RefreshAccessTokenError' | 'RefreshTokenExpired';
   }
@@ -45,6 +48,8 @@ declare module 'next-auth/jwt' {
     accessTokenExp?: number | undefined;
     refreshTokenExp?: number | undefined;
     clientId?: string | undefined;
+    forcePasswordChange?: boolean;
+    isTwoFactorEnabled?: boolean;
     error?: 'RefreshAccessTokenError' | 'RefreshTokenExpired' | null | undefined;
   }
 }

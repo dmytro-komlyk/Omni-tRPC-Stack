@@ -173,7 +173,7 @@ const Sidebar = ({ routes }: ISidebarProps) => {
           initial="hidden"
           animate="show"
           exit="exit"
-          className={`sm:none linear dark:bg-navy-800! dark:shadow-navy-800/5 fixed! z-50! m-4 flex flex-col rounded-xl bg-white shadow-md transition-all duration-300 ease-in-out xl:static xl:left-auto xl:h-[calc(100%-35px)] xl:min-h-[calc(100%-35px)] dark:text-white ${isSideBarOpen ? 'xl:w-63.75' : 'xl:w-0 xl:overflow-hidden'} `}
+          className={`sm:none linear dark:bg-navy-800! dark:shadow-navy-800/5 fixed! z-50! m-4 flex flex-col rounded-xl bg-white shadow-xl transition-all duration-300 ease-in-out xl:static xl:left-auto xl:h-[calc(100%-35px)] xl:min-h-[calc(100%-35px)] dark:text-white ${isSideBarOpen ? 'xl:w-63.75' : 'xl:w-0 xl:overflow-hidden'} `}
         >
           {sidebarContent}
         </motion.div>
