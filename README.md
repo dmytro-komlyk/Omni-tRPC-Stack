@@ -1,42 +1,54 @@
 <div align="center">
 
-# 🚀 Fullstack Boilerplate: Next.js + Nest.js + Expo (tRPC Monorepo)
+# 💠 Omni-tRPC-Stack
+
+### The Ultimate Fullstack Monorepo Engine
+
+**Next.js 16 • Nest.js • Expo • tRPC • Prisma**
+
+[![CI/CD Build](https://github.com/dmytro-komlyk/omni-trpc-stack/actions/workflows/ssh-build.yml/badge.svg)](https://github.com/dmytro-komlyk/omni-trpc-stack/actions/workflows/ssh-build.yml)
+[![CI/CD Deploy](https://github.com/dmytro-komlyk/omni-trpc-stack/actions/workflows/ssh-deploy.yml/badge.svg)](https://github.com/dmytro-komlyk/omni-trpc-stack/actions/workflows/ssh-deploy.yml)
+
+[Explore Documentation](#-getting-started) • [Report Bug](https://github.com/dmytro-komlyk/omni-trpc-stack/issues)
 
 </div>
 
-<div align="center">
-
-[![CI/CD Build Pipeline](https://github.com/dmytro-komlyk/fullstack-boilerplate-next-nest-vps/actions/workflows/ssh-build.yml/badge.svg)](https://github.com/dmytro-komlyk/fullstack-boilerplate-next-nest-vps/actions/workflows/ssh-build.yml)
-[![CI/CD Deploy Pipeline](https://github.com/dmytro-komlyk/fullstack-boilerplate-next-nest-vps/actions/workflows/ssh-deploy.yml/badge.svg)](https://github.com/dmytro-komlyk/fullstack-boilerplate-next-nest-vps/actions/workflows/ssh-deploy.yml)
-
-</div>
+---
 
 ## 🌟 Overview
 
-This repository is a high-performance **Monorepo** powered by PNPM Workspaces. It bridges a robust Nest.js backend, two Next.js frontend applications (Client & Admin), and a cross-platform Expo mobile app.
+**Omni-tRPC-Stack** is a high-performance, production-ready Monorepo architecture. It eliminates the friction between your Backend and multiple Frontends by providing a unified, **100% Type-Safe** communication layer.
 
-The standout feature is **End-to-End Type-Safety** across the entire stack using tRPC—no code generation required, just pure TypeScript.
+### Why Omni-Stack?
+
+- **🧩 Single Source of Truth:** Forget about duplicating validation logic. Use Shared Zod schemas to validate data across Web, Mobile, and Server simultaneously. Change once, update everywhere.
+- **🛡️ E2E Type-Safety (Zero-runtime errors):** Experience the magic of tRPC. Catch API breaking changes at compile time before they ever reach production. If your backend changes, your frontend won't build until it's fixed.
+- **📱 Native Mobile Integration:** Not just a web-wrapper. A fully-fledged Expo (React Native) application is baked into the monorepo, sharing logic and state with your web apps out of the box.
+- **🚢 DevOps-as-a-Service:** Industrial-grade deployment. From Docker Orchestration to automated GitHub Actions CI/CD for your own VPS. It's not just a boilerplate; it's a complete production pipeline.
+- **🔐 Advanced Security Included:** Full 2FA (Two-Factor Authentication) with Backup Codes, Role-based Access Control (RBAC), and secure Session management are already pre-configured.
+
+---
 
 ## 🛠 Tech Stack
 
-### Infrastructure & Monorepo
+### 🏗 Infrastructure & Monorepo
 
-- **Monorepo Management:** PNPM Workspaces + Turborepo
-- **API Layer:** tRPC (E2E Type-Safety)
-- **Database:** PostgreSQL + Prisma ORM
-- **Containerization:** Docker & Docker Compose
+- **Monorepo:** [PNPM Workspaces](https://pnpm.io/workspaces) + [Turborepo](https://turbo.build/)
+- **API Layer:** [tRPC](https://trpc.io/) (End-to-End Type-Safety)
+- **Database:** PostgreSQL + [Prisma ORM](https://www.prisma.io/)
+- **DevOps:** Docker, Nginx Proxy Manager, GitHub Actions
 
-### Frontend & Mobile
+### 💻 Frontend & Mobile
 
-- **Web:** Next.js 16 (App Router), TailwindCSS, HeroUI
-- **Mobile:** Expo (React Native) + Expo Router, TailwindCSS, React Native Paper
-- **State Management:** Zustand + TanStack Query (React Query)
-- **Forms:** React Hook Form + Zod Validation
+- **Web Framework:** [Next.js 16](https://nextjs.org/) (App Router)
+- **Mobile:** [Expo](https://expo.dev/) (React Native) + Expo Router
+- **UI Toolkit:** [HeroUI](https://heroui.com/) (ex. NextUI) + TailwindCSS
+- **State:** Zustand + TanStack Query
 
-### Backend
+### ⚙️ Backend
 
-- **Framework:** Nest.js (Modular Architecture)
-- **Authentication:** NextAuth (Web) + JWT/SecureStore (Mobile)
+- **Core:** [Nest.js](https://nestjs.com/) (Modular Architecture)
+- **Auth:** [NextAuth.js](https://next-auth.js.org/) (Web) + JWT (Mobile)
 - **Validation:** Shared Zod schemas across the entire Monorepo
 
 ## 📁 Project Structure
