@@ -1,6 +1,6 @@
 import { prisma, User } from '@package/prisma';
 
-import { UserRole, UserStatus } from '../../auth/auth.schema';
+import { UserRole } from '../../auth/auth.schema';
 
 export const usersTools = {
   getUserList: async () => {
@@ -68,24 +68,5 @@ export const usersTools = {
       status: user.status,
       nickName: user.nickName,
     });
-  },
-  updateUserStatus: async ({ email, status }: { email: string; status: string }) => {
-    const normalizedStatus = status.toUpperCase() as UserStatus;
-    const allowedStatus = ['ACTIVE', 'BANNED', 'SUSPENDED'];
-
-    if (!allowedStatus.includes(normalizedStatus)) {
-      return 'Error: Invalid status';
-    }
-
-    try {
-      await prisma.user.update({
-        where: { email },
-        data: { status: normalizedStatus },
-      });
-
-      return `Success: ${email} updated to ${status}`;
-    } catch (error: any) {
-      return `Update failed: ${error.message}`;
-    }
   },
 };

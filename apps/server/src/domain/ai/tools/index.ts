@@ -68,18 +68,6 @@ export const createTools = (isAdmin: boolean): Record<string, Tool<any, any>> =>
     execute: async ({ email }: { email: any }) => await usersTools.findUser({ email }),
   } as any),
 
-  updateUserStatus: tool({
-    description: 'Change a user status (e.g., ban, active, suspend)',
-    parameters: z.object({
-      email: z.string().email(),
-      status: z.enum(['ACTIVE', 'BANNED', 'SUSPENDED']),
-    }),
-    execute: async ({ email, status }: { email: any; status: any }) => {
-      if (!isAdmin) return 'Error: Permission denied';
-      return await usersTools.updateUserStatus({ email, status });
-    },
-  } as any),
-
   // --- systemTools ---
   getSystemStatus: tool({
     description: 'Check current system operational status and support time',

@@ -6,7 +6,6 @@ export const ADMIN_TOOLS = [
   'getUsersByRole',
   'getRecentUsers',
   'findUser',
-  'updateUserStatus',
   'exportUsersToCSV',
 ];
 
