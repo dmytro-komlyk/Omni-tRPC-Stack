@@ -34,13 +34,20 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  BANNED
+  PENDING
+}
+
 model User {
-  id                  String    @id @default(uuid())
-  email               String?   @unique
+  id                  String     @id @default(uuid())
+  email               String?    @unique
   emailVerified       DateTime?
-  role                UserRole  @default(USER)
+  role                UserRole   @default(USER)
+  status              UserStatus @default(ACTIVE)
   password            String?
-  forcePasswordChange Boolean   @default(false)
+  forcePasswordChange Boolean    @default(false)
 
   firstName String?
   lastName  String?

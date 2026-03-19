@@ -1,3 +1,4 @@
+import { aiRouter } from '../ai/ai.router';
 import { authRouter } from '../auth/auth.router';
 import { notificationRouter } from '../notification/notification.router';
 import { healthCheckerRouter } from './health.router';
@@ -7,6 +8,7 @@ export const appRouter = router({
   health: healthCheckerRouter,
   auth: authRouter,
   notification: notificationRouter,
+  ai: aiRouter,
   // other routers
 });
 

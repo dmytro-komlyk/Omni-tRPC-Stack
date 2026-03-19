@@ -6,6 +6,7 @@ import React from 'react';
 import Footer from '@/components/footer/Footer';
 import LoadingPageSpinner from '@/components/loading/LoadingPageSpinner';
 import Navbar from '@/components/navbar';
+import { AiAssistantPlugin } from '@/components/plugins/AiAssistantPlugin';
 import Sidebar from '@/components/sidebar';
 import routes from '@/routes';
 
@@ -29,6 +30,7 @@ export default function Admin({ children }: { children: React.ReactNode }) {
       >
         {/* Main Content */}
         <main className="3xl:container flex min-h-screen w-full min-w-full flex-col px-4 transition-all 2xl:px-10">
+          <AiAssistantPlugin />
           {/* Routes */}
           <Navbar routes={routes} />
           <div className="relative flex">

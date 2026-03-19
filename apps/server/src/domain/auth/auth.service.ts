@@ -58,6 +58,13 @@ export async function signIn({
     });
   }
 
+  if (user.status === 'BANNED') {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Your account has been blocked. Please contact support.',
+    });
+  }
+
   const isAdminHost = domain.origin?.includes('admin');
   const isAdminRole = ['ADMIN', 'SUPER_ADMIN'].includes(user.role);
 
@@ -451,7 +458,7 @@ export async function verifyEmail(input: { token: string; email: string }) {
 
   await prisma.user.update({
     where: { id: verificationToken.user.id },
-    data: { emailVerified: new Date() },
+    data: { emailVerified: new Date(), status: 'ACTIVE' },
   });
 
   await prisma.verificationToken.deleteMany({
@@ -755,6 +762,7 @@ export async function signUp({
       password: hashedPassword,
       nickName: data.nickName,
       role: assignedRole,
+      status: 'PENDING',
       emailVerified: null,
     },
   });
