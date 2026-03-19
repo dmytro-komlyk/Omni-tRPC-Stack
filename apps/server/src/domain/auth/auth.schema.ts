@@ -6,6 +6,9 @@ export type ProviderType = z.infer<typeof providerType>;
 export const userRole = z.enum(['USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN']);
 export type UserRole = z.infer<typeof userRole>;
 
+export const userStatus = z.enum(['ACTIVE', 'BANNED', 'PENDING']);
+export type UserStatus = z.infer<typeof userStatus>;
+
 export const tokenType = z.enum(['access', 'refresh', 'reset']);
 export type TokenJWT = z.infer<typeof tokenType>;
 

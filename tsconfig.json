@@ -26,6 +26,8 @@
       "admin/*": ["apps/admin/src/*"],
       "mobile/*": ["apps/mobile/src/*"],
       "server/*": ["apps/server/src/*"],
+      "@package/ai": ["packages/ai/src/index.ts"],
+      "@package/ai/*": ["packages/ai/src/*"],
       "@package/api": ["packages/api/src/index.ts"],
       "@package/api/*": ["packages/api/src/*"],
       "@package/next-auth": ["packages/next-auth/src/index.ts"],
