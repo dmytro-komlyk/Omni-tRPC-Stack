@@ -124,7 +124,7 @@ export async function signIn({
       email: data.email,
       payload: {
         link,
-        name: user.nickName,
+        name: user.nickName || null,
         appName: process.env.APP_NAME as string,
         t,
         lang: domain.locale,
@@ -562,7 +562,7 @@ export async function resendVerification({
     email: data.email,
     payload: {
       link,
-      name: user.nickName,
+      name: user.nickName || null,
       appName: process.env.APP_NAME as string,
       t,
       lang: domain.locale,
@@ -762,7 +762,7 @@ export async function signUp({
       email: data.email,
       payload: {
         link,
-        name: existingUser.nickName,
+        name: existingUser.nickName || null,
         appName: process.env.APP_NAME as string,
         t,
         lang: domain.locale,
@@ -811,7 +811,7 @@ export async function signUp({
     email: data.email,
     payload: {
       link,
-      name: user.nickName,
+      name: user.nickName || null,
       appName: process.env.APP_NAME as string,
       t,
       lang: domain.locale,
@@ -969,7 +969,7 @@ export async function receivePasswordResetLink({
     email: data.email,
     payload: {
       link,
-      name: user.nickName,
+      name: user.nickName || null,
       appName: process.env.APP_NAME as string,
       t,
       lang: domain.locale,
@@ -1047,7 +1047,7 @@ export async function resetPassword({
     email: data.email,
     payload: {
       link: loginLink,
-      name: user.nickName || user.firstName,
+      name: user.nickName || user.firstName || null,
       appName: process.env.APP_NAME as string,
       t,
       lang: domain.locale,
