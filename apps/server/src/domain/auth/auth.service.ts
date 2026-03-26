@@ -116,7 +116,7 @@ export async function signIn({
       },
     });
 
-    const t = await getEmailTranslations('uk', 'resetPassword');
+    const t = await getEmailTranslations(domain.locale, 'resetPassword');
 
     const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
 
@@ -127,10 +127,10 @@ export async function signIn({
         name: user.nickName,
         appName: process.env.APP_NAME as string,
         t,
-        lang: 'uk',
+        lang: domain.locale,
       },
       template: '/templates/verifyEmail.handlebars',
-      subject: 'Verify your email',
+      subject: t.subject,
     });
 
     throw new TRPCError({
@@ -554,15 +554,21 @@ export async function resendVerification({
     },
   });
 
-  const t = await getEmailTranslations('uk', 'resetPassword');
+  const t = await getEmailTranslations(domain.locale, 'resetPassword');
 
   const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
 
   await sendEmail({
     email: data.email,
-    payload: { link, name: user.nickName, appName: process.env.APP_NAME as string, t, lang: 'uk' },
+    payload: {
+      link,
+      name: user.nickName,
+      appName: process.env.APP_NAME as string,
+      t,
+      lang: domain.locale,
+    },
     template: '/templates/verifyEmail.handlebars',
-    subject: 'Verify your email',
+    subject: t.subject,
   });
 
   return {
@@ -748,7 +754,7 @@ export async function signUp({
         userId: existingUser.id,
       },
     });
-    const t = await getEmailTranslations('uk', 'resetPassword');
+    const t = await getEmailTranslations(domain.locale, 'resetPassword');
 
     const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
 
@@ -759,10 +765,10 @@ export async function signUp({
         name: existingUser.nickName,
         appName: process.env.APP_NAME as string,
         t,
-        lang: 'uk',
+        lang: domain.locale,
       },
       template: '/templates/verifyEmail.handlebars',
-      subject: 'Verify your email',
+      subject: t.subject,
     });
 
     return {
@@ -797,15 +803,21 @@ export async function signUp({
     },
   });
 
-  const t = await getEmailTranslations('uk', 'resetPassword');
+  const t = await getEmailTranslations(domain.locale, 'resetPassword');
 
   const link = `${domain.origin || process.env.APP_WEBSITE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(data.email)}`;
 
   await sendEmail({
     email: data.email,
-    payload: { link, name: user.nickName, appName: process.env.APP_NAME as string, t, lang: 'uk' },
+    payload: {
+      link,
+      name: user.nickName,
+      appName: process.env.APP_NAME as string,
+      t,
+      lang: domain.locale,
+    },
     template: '/templates/verifyEmail.handlebars',
-    subject: 'Verify your email',
+    subject: t.subject,
   });
 
   return {
@@ -1027,7 +1039,7 @@ export async function resetPassword({
     },
   });
 
-  const t = await getEmailTranslations('uk', 'resetPassword');
+  const t = await getEmailTranslations(domain.locale, 'resetPassword');
 
   const loginLink = `${domain.origin}/auth/sign-in`;
 
@@ -1038,10 +1050,10 @@ export async function resetPassword({
       name: user.nickName || user.firstName,
       appName: process.env.APP_NAME as string,
       t,
-      lang: 'uk',
+      lang: domain.locale,
     },
     template: '/templates/passwordUpdatedConfirmation.handlebars',
-    subject: 'Security Notice: Your password has been changed',
+    subject: t.subject,
   });
 
   return {
@@ -1096,7 +1108,7 @@ export async function changeForcedPassword({
     },
   });
 
-  const t = await getEmailTranslations('uk', 'resetPassword');
+  const t = await getEmailTranslations(domain.locale, 'resetPassword');
 
   const loginLink = `${domain.origin}/auth/sign-in`;
 
@@ -1107,10 +1119,10 @@ export async function changeForcedPassword({
       name: user.nickName || user.firstName || 'Admin',
       appName: process.env.APP_NAME as string,
       t,
-      lang: 'uk',
+      lang: domain.locale,
     },
     template: '/templates/passwordUpdatedConfirmation.handlebars',
-    subject: 'Security Notice: Your credentials have been initialized',
+    subject: t.subject,
   });
 
   return {
@@ -1141,6 +1153,7 @@ export async function updateAccessBackendToken({
 
 export async function createInvite({
   data,
+  domain,
 }: {
   data: InviteUserData;
   domain: Domain;
@@ -1171,9 +1184,13 @@ export async function createInvite({
     },
   });
 
-  const t = await getEmailTranslations('uk', 'resetPassword');
+  const t = await getEmailTranslations(domain.locale, 'resetPassword');
 
   const link = `${process.env.APP_ADMIN_URL}/auth/sign-up?token=${token}&email=${encodeURIComponent(invite.email)}`;
+
+  const subject = t.subject.includes('{{appName}}')
+    ? t.subject.replace('{{appName}}', process.env.APP_NAME)
+    : t.subject;
 
   await sendEmail({
     email: invite.email,
@@ -1182,10 +1199,10 @@ export async function createInvite({
       role: invite.role,
       appName: process.env.APP_NAME as string,
       t,
-      lang: 'uk',
+      lang: domain.locale,
     },
     template: '/templates/inviteEmail.handlebars',
-    subject: `Invitation to join ${process.env.APP_NAME}`,
+    subject: subject,
   });
 
   return {
