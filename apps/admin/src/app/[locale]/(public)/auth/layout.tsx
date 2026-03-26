@@ -1,6 +1,6 @@
 'use client';
 
-import ThemeFixedPlugin from '@/components/plugins/ThemeFixedPlugin';
+import SettingsWidgetPlugin from '@/components/plugins/SettingsWidgetPlugin';
 import { PropsWithChildren } from 'react';
 
 interface AuthProps extends PropsWithChildren {}
@@ -9,8 +9,8 @@ export default function AuthLayout({ children }: AuthProps) {
   return (
     <div className="relative float-right h-full min-h-screen w-full ">
       <main className={`mx-auto min-h-screen`}>
-        <ThemeFixedPlugin />
         {children}
+        <SettingsWidgetPlugin />
       </main>
     </div>
   );

@@ -1,8 +1,11 @@
 import TwoFactor from '@/components/auth/TwoFactor';
 import Default from '@/components/auth/variants/DefaultAuthLayout';
+import { getTranslations } from 'next-intl/server';
 import { TbShieldLock } from 'react-icons/tb';
 
 async function TwoFactorVerifyDefault() {
+  const t = await getTranslations('Auth.TwoFactor.Verify');
+
   return (
     <Default
       maincard={
@@ -11,7 +14,7 @@ async function TwoFactorVerifyDefault() {
             <div className="flex items-center justify-between rounded-t-3xl bg-navy-700 px-8 py-3 dark:bg-brand-600">
               <TbShieldLock className="size-4 text-white" />
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
-                Identity Verification
+                {t('header')}
               </span>
               <div className="flex gap-1.5">
                 <div className="size-2 animate-pulse rounded-full bg-green-400" />
@@ -21,11 +24,10 @@ async function TwoFactorVerifyDefault() {
 
             <div className="p-8 md:p-10">
               <h3 className="mb-2 text-3xl font-black tracking-tight text-navy-800 dark:text-white">
-                Checkpoint
+                {t('title')}
               </h3>
               <p className="mb-8 text-sm font-medium text-gray-500 dark:text-gray-400">
-                This account is protected by multi-factor authentication. Please enter your code to
-                unlock the session.
+                {t('description')}
               </p>
 
               <TwoFactor mode="verify" />
@@ -33,7 +35,7 @@ async function TwoFactorVerifyDefault() {
               <div className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-gray-50 py-3 dark:bg-white/5">
                 <div className="size-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
                 <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                  Secure Biometric-Ready Tunnel
+                  {t('secureStatus')}
                 </span>
               </div>
             </div>

@@ -1,11 +1,13 @@
 import SignUp from '@/components/auth/SignUp';
 import Default from '@/components/auth/variants/DefaultAuthLayout';
 import { baseUrl } from '@/utils/constants';
+import { getTranslations } from 'next-intl/server';
 import { FaUserPlus } from 'react-icons/fa6';
 
 async function SignUpPage({ searchParams }: { searchParams: Promise<{ callbackUrl: string }> }) {
   const params = await searchParams;
   const callbackUrl = params.callbackUrl || `${baseUrl}/auth/sign-in`;
+  const t = await getTranslations('Auth.SignUp');
 
   return (
     <Default
@@ -16,7 +18,7 @@ async function SignUpPage({ searchParams }: { searchParams: Promise<{ callbackUr
               <div className="flex items-center gap-2">
                 <FaUserPlus className="size-4 text-white" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
-                  Administrative Recruitment
+                  {t('badge')}
                 </span>
               </div>
               <div className="flex gap-1.5">
@@ -27,10 +29,10 @@ async function SignUpPage({ searchParams }: { searchParams: Promise<{ callbackUr
 
             <div className="p-8 md:p-10">
               <h3 className="mb-2 text-3xl font-black tracking-tight text-navy-800 dark:text-white">
-                Create Admin Account
+                {t('title')}
               </h3>
               <p className="mb-8 text-sm font-medium text-gray-500 dark:text-gray-400">
-                Setup your high-level credentials to initialize the management console.
+                {t('description')}
               </p>
               <SignUp callbackUrl={callbackUrl} />
             </div>

@@ -1,8 +1,12 @@
-import ForgotPassword from '@/components/auth/ForgotPassword';
-import Default from '@/components/auth/variants/DefaultAuthLayout';
+import { getTranslations } from 'next-intl/server';
 import { LuMailQuestion } from 'react-icons/lu';
 
+import ForgotPassword from '@/components/auth/ForgotPassword';
+import Default from '@/components/auth/variants/DefaultAuthLayout';
+
 async function ForgotPasswordDefault() {
+  const t = await getTranslations('Auth.ForgotPassword');
+
   return (
     <Default
       maincard={
@@ -12,7 +16,7 @@ async function ForgotPasswordDefault() {
               <div className="flex items-center gap-2">
                 <LuMailQuestion className="size-4 text-white" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
-                  Identity Verification Needed
+                  {t('badge')}
                 </span>
               </div>
               <div className="flex gap-1.5">
@@ -23,19 +27,17 @@ async function ForgotPasswordDefault() {
 
             <div className="p-8 md:p-10">
               <h3 className="mb-2 text-3xl font-black tracking-tight text-navy-800 dark:text-white">
-                Account Recovery
+                {t('title')}
               </h3>
               <p className="mb-8 text-sm font-medium text-gray-500 dark:text-gray-400">
-                Lost your access? Provide your registered email, and the system will generate a
-                secure recovery link.
+                {t('description')}
               </p>
 
               <ForgotPassword />
 
               <div className="mt-8 rounded-2xl bg-indigo-50/50 p-4 dark:bg-indigo-500/10 border-1 border-indigo-100 dark:border-indigo-500/20">
                 <p className="text-[11px] leading-relaxed text-indigo-700 dark:text-indigo-300">
-                  <strong>Note:</strong> Check your spam folder if you don't receive the email
-                  within 2 minutes. The link will be active for exactly 1 hour.
+                  <strong>{t('note.title')}</strong> {t('note.text')}
                 </p>
               </div>
             </div>

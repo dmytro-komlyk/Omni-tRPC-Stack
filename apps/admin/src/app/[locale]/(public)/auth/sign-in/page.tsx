@@ -1,38 +1,47 @@
-import TwoFactor from '@/components/auth/TwoFactor';
+import SignIn from '@/components/auth/SignIn';
 import Default from '@/components/auth/variants/DefaultAuthLayout';
-import { TbAuth2Fa } from 'react-icons/tb';
+import { baseUrl } from '@/utils/constants';
+import { getTranslations } from 'next-intl/server';
 
-async function TwoFactorSetupDefault() {
+async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string; email?: string }>;
+}) {
+  const params = await searchParams;
+  const callbackUrl = params.callbackUrl || `${baseUrl}/dashboard?toast=welcome`;
+  const defaultEmail = params.email || '';
+  const t = await getTranslations('Auth.SignIn');
+
   return (
     <Default
       maincard={
         <div className="relative flex h-full w-full items-center justify-center px-4">
           <div className="z-10 w-full max-w-112.5 overflow-hidden rounded-3xl border-1 border-navy-700/10 bg-white/80 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-navy-900/90">
-            <div className="flex items-center justify-between rounded-t-3xl bg-orange-600 px-8 py-3 dark:bg-orange-500">
-              <TbAuth2Fa className="size-4 text-white" />
+            <div className="flex items-center justify-between rounded-t-3xl bg-navy-700 px-8 py-3 dark:bg-brand-600">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
-                Security Challenge Required
+                {t('badge')}
               </span>
               <div className="flex gap-1.5">
-                <div className="size-2 animate-pulse rounded-full bg-white/40" />
+                <div className="size-2 rounded-full bg-white/20" />
                 <div className="size-2 rounded-full bg-white/20" />
               </div>
             </div>
 
             <div className="p-8 md:p-10">
               <h3 className="mb-2 text-3xl font-black tracking-tight text-navy-800 dark:text-white">
-                Two-Factor Auth
+                {t('title')}
               </h3>
               <p className="mb-8 text-sm font-medium text-gray-500 dark:text-gray-400">
-                Open your authenticator app and enter the 6-digit verification code to proceed.
+                {t('description')}
               </p>
 
-              <TwoFactor mode="setup" />
+              <SignIn callbackUrl={callbackUrl} defaultEmail={defaultEmail} />
 
               <div className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-gray-50 py-3 dark:bg-white/5">
-                <div className="size-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                <div className="size-2 animate-pulse rounded-full bg-green-500" />
                 <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                  MFA Protected Entry Point
+                  {t('sslStatus')}
                 </span>
               </div>
             </div>
@@ -43,4 +52,4 @@ async function TwoFactorSetupDefault() {
   );
 }
 
-export default TwoFactorSetupDefault;
+export default SignInPage;
