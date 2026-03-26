@@ -5,7 +5,7 @@ import path from 'path';
 
 interface EmailPayload {
   link: string;
-  name: string;
+  name?: string | null;
   appName: string;
   lang: string;
   t: Record<string, any>;

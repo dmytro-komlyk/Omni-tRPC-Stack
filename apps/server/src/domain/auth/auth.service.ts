@@ -1196,7 +1196,6 @@ export async function createInvite({
     email: invite.email,
     payload: {
       link,
-      name: 'User',
       role: invite.role,
       appName: process.env.APP_NAME as string,
       t,
